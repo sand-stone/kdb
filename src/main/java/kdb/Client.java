@@ -44,33 +44,15 @@ public final class Client implements Closeable {
     } catch(IOException e) {}
   }
 
-  private static Table buildTestTable() {
-    return Table.TableBuilder.Table("acme", t -> {
-        t.column( c -> {
-            c.name("col1");
-            c.type(Table.ColumnType.Int32);
-            c.key(true);
-          });
-        t.column( c -> {
-            c.name("col2");
-            c.type(Table.ColumnType.Varchar);
-          });
-      });
-  }
-
-  private static Message.UpsertTable genTestData() {
-    List<String> names = Arrays.asList("col1", "col2");
-    List<Object> values = new ArrayList<Object>();
-    int[] col1 = { 1, 2, 3};
-    String[] col2 = {"aaa", "bbb", "ccc"};
-    values.add(col1);
-    values.add(col2);
-    return new Message.UpsertTable("acme", names, values);
+  private static Message.Upsert genTestData() {
+    List<byte[]> keys = Arrays.asList("key1".getBytes(), "key2".getBytes());
+    List<byte[]> values = Arrays.asList("val1".getBytes(), "val2".getBytes());
+    return new Message.Upsert(keys, values);
   }
 
   public static void main(String[] args) {
     Client client = new Client();
-    client.sendMsg("http://localhost:8000/createtable", new Message.CreateTable(buildTestTable(), 10));
+    client.sendMsg("http://localhost:8000/createtable", new Message.Create(10));
     client.sendMsg("http://localhost:8000/upsertable"+"?table=acme&partition=0", genTestData());
     client.sendMsg("http://localhost:8000/upsertable"+"?table=acme&partition=1", genTestData());
   }

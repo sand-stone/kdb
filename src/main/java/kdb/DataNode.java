@@ -25,10 +25,22 @@ public final class DataNode {
     port(port);
     threadPool(maxThreads, minThreads, timeOutMillis);
     get("/", (req, res) -> "kdb DataNode");
-    post("/createtable", (request, response) -> {
+    post("/insert", (request, response) -> {
         try {
           byte[] data = request.bodyAsBytes();
-          Message.CreateTable msg = (Message.CreateTable)Serializer.deserialize(data);
+          Message.Insert msg = (Message.Insert)Serializer.deserialize(data);
+          log.info("msg {}", msg);
+          return "insert table\n";
+        } catch(Exception e) {
+          e.printStackTrace();
+          log.info(e.toString());
+          throw e;
+        }
+      });
+    post("/upsert", (request, response) -> {
+        try {
+          byte[] data = request.bodyAsBytes();
+          Message.Upsert msg = (Message.Upsert)Serializer.deserialize(data);
           log.info("msg {}", msg);
           return "create table\n";
         } catch(Exception e) {
@@ -37,10 +49,10 @@ public final class DataNode {
           throw e;
         }
       });
-    post("/upsertable", (request, response) -> {
+    post("/get", (request, response) -> {
         try {
           byte[] data = request.bodyAsBytes();
-          Message.UpsertTable msg = (Message.UpsertTable)Serializer.deserialize(data);
+          Message.Get msg = (Message.Get)Serializer.deserialize(data);
           log.info("msg {}", msg);
           String table = request.queryParams("table");
           return "upsert table";
@@ -50,17 +62,11 @@ public final class DataNode {
           throw e;
         }
       });
-    post("/deletetable", (request, response) -> {
+    post("/multiget", (request, response) -> {
         byte[] data = request.bodyAsBytes();
-        Message.DeleteTable msg = (Message.DeleteTable)Serializer.deserialize(data);
+        Message.MultiGet msg = (Message.MultiGet)Serializer.deserialize(data);
         log.info("msg {}", msg);
-        return "delete table\n";
-      });
-    post("/querytable", (request, response) -> {
-        byte[] data = request.bodyAsBytes();
-        Message.QueryTable msg = (Message.QueryTable)Serializer.deserialize(data);
-        log.info("msg {}", msg.table);
-        return "query table\n";
+        return "multi\n";
       });
     init();
   }
