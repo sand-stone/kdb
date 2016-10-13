@@ -44,17 +44,22 @@ public final class Client implements Closeable {
     } catch(IOException e) {}
   }
 
-  private static Message.Upsert genTestData() {
+  private static Message.Insert genInsertReq() {
     List<byte[]> keys = Arrays.asList("key1".getBytes(), "key2".getBytes());
     List<byte[]> values = Arrays.asList("val1".getBytes(), "val2".getBytes());
-    return new Message.Upsert(keys, values);
+    return new Message.Insert(keys, values);
+  }
+
+  private static Message.Get genGetReq() {
+    List<byte[]> keys = Arrays.asList("key1".getBytes(), "key2".getBytes());
+    List<byte[]> values = Arrays.asList("val1".getBytes(), "val2".getBytes());
+    return new Message.Get("key2".getBytes(), Message.Get.Type.Equal);
   }
 
   public static void main(String[] args) {
     Client client = new Client();
-    client.sendMsg("http://localhost:8000/createtable", new Message.Create(10));
-    client.sendMsg("http://localhost:8000/upsertable"+"?table=acme&partition=0", genTestData());
-    client.sendMsg("http://localhost:8000/upsertable"+"?table=acme&partition=1", genTestData());
+    client.sendMsg("http://localhost:8000/insert", genInsertReq());
+    client.sendMsg("http://localhost:8000/get", genGetReq());
   }
 
 }

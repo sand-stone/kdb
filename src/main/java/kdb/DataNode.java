@@ -17,11 +17,16 @@ public final class DataNode {
 
   private static final String rootData = "./datanode";
 
-  public static void main(String[] args) {
+  public DataNode() {
+
+  }
+
+  public void run(PropertiesConfiguration config) {
     int maxThreads = 8;
     int minThreads = 2;
     int timeOutMillis = 30000;
-    int port = 8000;
+    int port = config.getInt("port");
+    Store store = new Store(config.getString("store"));
     port(port);
     threadPool(maxThreads, minThreads, timeOutMillis);
     get("/", (req, res) -> "kdb DataNode");
@@ -30,6 +35,9 @@ public final class DataNode {
           byte[] data = request.bodyAsBytes();
           Message.Insert msg = (Message.Insert)Serializer.deserialize(data);
           log.info("msg {}", msg);
+          try(Store.Context ctx = store.getContext()) {
+            store.insert(ctx, msg);
+          }
           return "insert table\n";
         } catch(Exception e) {
           e.printStackTrace();
@@ -54,8 +62,11 @@ public final class DataNode {
           byte[] data = request.bodyAsBytes();
           Message.Get msg = (Message.Get)Serializer.deserialize(data);
           log.info("msg {}", msg);
-          String table = request.queryParams("table");
-          return "upsert table";
+          byte[] ret;
+          try(Store.Context ctx = store.getContext()) {
+            ret = store.get(ctx, msg);
+          }
+          return new String(ret);
         }  catch(Exception e) {
           e.printStackTrace();
           log.info(e.toString());
@@ -69,6 +80,21 @@ public final class DataNode {
         return "multi\n";
       });
     init();
+  }
+
+  public static void main(String[] args) throws Exception {
+    if(args.length < 1) {
+      System.out.println("java -cp ./target/kdb-1.0-SNAPSHOT.jar kdb.DataNode conf/datanode.properties");
+      return;
+    }
+    File propertiesFile = new File(args[0]);
+    if(!propertiesFile.exists()) {
+      System.out.printf("config file %s does not exist", propertiesFile.getName());
+      return;
+    }
+    Configurations configs = new Configurations();
+    PropertiesConfiguration config = configs.properties(propertiesFile);
+    new DataNode().run(config);
   }
 
 }

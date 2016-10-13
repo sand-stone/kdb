@@ -37,9 +37,14 @@ public final class Message implements Serializable {
   }
 
   public static final class Get implements Serializable {
+    public enum Type {
+      Equal, GreaterEqual, LessEqual
+    }
     public byte[] key;
-    public Get(byte[] key) {
+    public Type op;
+    public Get(byte[] key, Type op) {
       this.key = key;
+      this.op = op;
     }
   }
 
