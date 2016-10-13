@@ -27,16 +27,25 @@ public final class DataNode {
     int timeOutMillis = 30000;
     int port = config.getInt("port");
     Store store = new Store(config.getString("store"));
+    boolean standalone = config.getBoolean("standalone");
+    final Ring ring = new Ring(config.getString("ringaddr"), config.getString("leader"), config.getString("logDir"));;
+    if(!standalone) {
+      ring.bind(store);
+    }
     port(port);
     threadPool(maxThreads, minThreads, timeOutMillis);
     get("/", (req, res) -> "kdb DataNode");
     post("/insert", (request, response) -> {
         try {
           byte[] data = request.bodyAsBytes();
-          Message.Insert msg = (Message.Insert)Serializer.deserialize(data);
-          log.info("msg {}", msg);
-          try(Store.Context ctx = store.getContext()) {
-            store.insert(ctx, msg);
+          if(standalone) {
+            Message.Insert msg = (Message.Insert)Serializer.deserialize(data);
+            log.info("msg {}", msg);
+            try(Store.Context ctx = store.getContext()) {
+              store.insert(ctx, msg);
+            }
+          } else {
+            ring.zab.send(ByteBuffer.wrap(data), null);
           }
           return "insert table\n";
         } catch(Exception e) {
@@ -48,9 +57,16 @@ public final class DataNode {
     post("/upsert", (request, response) -> {
         try {
           byte[] data = request.bodyAsBytes();
-          Message.Upsert msg = (Message.Upsert)Serializer.deserialize(data);
-          log.info("msg {}", msg);
-          return "create table\n";
+          if(standalone) {
+            Message.Upsert msg = (Message.Upsert)Serializer.deserialize(data);
+            log.info("msg {}", msg);
+            try(Store.Context ctx = store.getContext()) {
+              store.upsert(ctx, msg);
+            }
+          } else {
+            ring.zab.send(ByteBuffer.wrap(data), null);
+          }
+          return "update table\n";
         } catch(Exception e) {
           e.printStackTrace();
           log.info(e.toString());

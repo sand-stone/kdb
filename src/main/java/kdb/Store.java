@@ -81,6 +81,19 @@ public class Store implements Closeable {
     return ret;
   }
 
+  public void handle(ByteBuffer msg) {
+    Object o = Serializer.deserialize(msg);
+    if(o instanceof Message.Insert) {
+      try(Store.Context ctx = getContext()) {
+        insert(ctx, (Message.Insert)o);
+      }
+    } else if (o instanceof Message.Upsert) {
+      try(Store.Context ctx = getContext()) {
+        upsert(ctx, (Message.Upsert)o);
+      }
+    }
+  }
+
   public void upsert(Context ctx, Message.Upsert msg) {
     log.info("cols: {}", msg.keys);
     log.info("values: {}", msg.values);

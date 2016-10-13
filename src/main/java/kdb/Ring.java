@@ -21,9 +21,11 @@ import kdb.jzab.Zxid;
 class Ring implements Runnable, StateMachine {
   private static Logger log = LogManager.getLogger(Ring.class);
 
-  private Zab zab;
   private String serverId;
   private final ZabConfig config = new ZabConfig();
+  Store store;
+
+  public Zab zab;
 
   public Ring(String serverId, String joinPeer, String logDir) {
     try {
@@ -52,6 +54,10 @@ class Ring implements Runnable, StateMachine {
     }
   }
 
+  public void bind(Store store) {
+    this.store = store;
+  }
+
   @Override
   public ByteBuffer preprocess(Zxid zxid, ByteBuffer message) {
     //log.debug("Preprocessing a message: {}", message);
@@ -61,13 +67,8 @@ class Ring implements Runnable, StateMachine {
   @Override
   public void deliver(Zxid zxid, ByteBuffer stateUpdate, String clientId,
                       Object ctx) {
-    Object o = Serializer.deserialize(stateUpdate);
-    try {
-      //log.info("o={}", o);
-      throw new IOException("oops");
-    } catch(IOException e) {
-      log.info(e);
-    }
+    log.info("quorum operation");
+    store.handle(stateUpdate);
   }
 
   @Override
