@@ -15,6 +15,12 @@ import java.util.concurrent.*;
 import java.time.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import kdb.proto.XMessage.Message;
+import kdb.proto.XMessage.InsertOperation;
+import kdb.proto.XMessage.UpdateOperation;
+import kdb.proto.XMessage.GetOperation;
+import kdb.proto.XMessage.Message.MessageType;
+
 public class Store implements Closeable {
   private static Logger log = LogManager.getLogger(Store.class);
   private Connection conn;
@@ -49,26 +55,41 @@ public class Store implements Closeable {
     return new Context();
   }
 
-  public void insert(Context ctx, Message.Insert msg) {
-    log.info("cols: {}", msg.keys);
-    log.info("values: {}", msg.values);
+  public void insert(Context ctx, Message msg) {
+    assert msg.getType() == MessageType.Insert;
+    InsertOperation op = msg.getInsertOp();
     ctx.cursor.reset();
-    int len = msg.keys.size();
-    if(len != msg.values.size())
+    int len = op.getKeysCount();
+    if(len != op.getValuesCount())
       throw new RuntimeException("wrong length");
     for(int i = 0; i < len; i++) {
-      ctx.cursor.putKeyByteArray(msg.keys.get(i));
-      ctx.cursor.putValueByteArray(msg.values.get(i));
+      ctx.cursor.putKeyByteArray(op.getKeys(i).toByteArray());
+      ctx.cursor.putValueByteArray(op.getValues(i).toByteArray());
       ctx.cursor.insert();
     }
   }
 
-  public byte[] get(Context ctx, Message.Get msg) {
-    byte[] ret = null;
+  public void update(Context ctx, Message msg) {
+    assert msg.getType() == MessageType.Update;
+    UpdateOperation op = msg.getUpdateOp();
     ctx.cursor.reset();
-    switch(msg.op) {
+    int len = op.getKeysCount();
+    if(len != op.getValuesCount())
+      throw new RuntimeException("wrong length");
+    for(int i = 0; i < len; i++) {
+      ctx.cursor.putKeyByteArray(op.getKeys(i).toByteArray());
+      ctx.cursor.putValueByteArray(op.getValues(i).toByteArray());
+      ctx.cursor.update();
+    }
+  }
+
+  public byte[] get(Context ctx, Message msg) {
+    byte[] ret = null;
+    assert msg.getType() == MessageType.Get;
+    ctx.cursor.reset();
+    switch(msg.getGetOp().getOp()) {
     case Equal: {
-      ctx.cursor.putKeyByteArray(msg.key);
+      ctx.cursor.putKeyByteArray(msg.getGetOp().getKey().toByteArray());
       if(ctx.cursor.search() == 0) {
         log.info("found");
         ret = ctx.cursor.getValueByteArray();
@@ -81,26 +102,17 @@ public class Store implements Closeable {
     return ret;
   }
 
-  public void handle(ByteBuffer msg) {
-    Object o = Serializer.deserialize(msg);
-    if(o instanceof Message.Insert) {
+  public void handle(ByteBuffer data) throws IOException {
+    Message msg = Message.parseFrom(data.array());
+    if(msg.getType() == MessageType.Insert) {
       try(Store.Context ctx = getContext()) {
-        insert(ctx, (Message.Insert)o);
+        insert(ctx, msg);
       }
-    } else if (o instanceof Message.Upsert) {
+    } else if (msg.getType() == MessageType.Update) {
       try(Store.Context ctx = getContext()) {
-        upsert(ctx, (Message.Upsert)o);
+        update(ctx, msg);
       }
     }
-  }
-
-  public void upsert(Context ctx, Message.Upsert msg) {
-    log.info("cols: {}", msg.keys);
-    log.info("values: {}", msg.values);
-    ctx.cursor.reset();
-    ctx.cursor.putKeyByteArray(null);
-    ctx.cursor.putValueByteArray(null);
-    ctx.cursor.update();
   }
 
   public void close() {

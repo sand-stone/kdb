@@ -12,6 +12,11 @@ import static spark.Spark.*;
 import org.eclipse.jetty.websocket.api.*;
 import org.eclipse.jetty.websocket.api.annotations.*;
 
+import kdb.proto.XMessage.Message;
+import kdb.proto.XMessage.InsertOperation;
+import kdb.proto.XMessage.UpdateOperation;
+import kdb.proto.XMessage.GetOperation;
+
 public final class DataNode {
   private static Logger log = LogManager.getLogger(DataNode.class);
 
@@ -39,7 +44,7 @@ public final class DataNode {
         try {
           byte[] data = request.bodyAsBytes();
           if(standalone) {
-            Message.Insert msg = (Message.Insert)Serializer.deserialize(data);
+            Message msg = Message.parseFrom(data);
             log.info("msg {}", msg);
             try(Store.Context ctx = store.getContext()) {
               store.insert(ctx, msg);
@@ -58,10 +63,10 @@ public final class DataNode {
         try {
           byte[] data = request.bodyAsBytes();
           if(standalone) {
-            Message.Upsert msg = (Message.Upsert)Serializer.deserialize(data);
+            Message msg = Message.parseFrom(data);
             log.info("msg {}", msg);
             try(Store.Context ctx = store.getContext()) {
-              store.upsert(ctx, msg);
+              store.update(ctx, msg);
             }
           } else {
             ring.zab.send(ByteBuffer.wrap(data), null);
@@ -76,7 +81,7 @@ public final class DataNode {
     post("/get", (request, response) -> {
         try {
           byte[] data = request.bodyAsBytes();
-          Message.Get msg = (Message.Get)Serializer.deserialize(data);
+          Message msg = Message.parseFrom(data);
           log.info("msg {}", msg);
           byte[] ret;
           try(Store.Context ctx = store.getContext()) {
@@ -91,8 +96,6 @@ public final class DataNode {
       });
     post("/multiget", (request, response) -> {
         byte[] data = request.bodyAsBytes();
-        Message.MultiGet msg = (Message.MultiGet)Serializer.deserialize(data);
-        log.info("msg {}", msg);
         return "multi\n";
       });
     init();
