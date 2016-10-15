@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package kdb;
+
+option java_package = "kdb.proto";
+option java_outer_classname = "XMessage";
+
+message Message {
+
+  enum MessageType {
+    Get = 0;
+    Insert = 1;
+    Update = 2;
+    Delete = 3;
+  }
+
+  MessageType type = 1;
+  GetOperation getOp = 2;
+  InsertOperation insertOp = 3;
+  UpdateOperation updateOp = 4;
+  DeleteOperation deleteOp = 5;
+}
+
+message GetOperation {
+  enum Type {
+     Equal = 0;
+     GreaterEqual = 1;
+     LessEqual = 2;
+   }
+  Type op = 1;
+  bytes key = 2;
+}
+
+message InsertOperation {
+  repeated bytes keys = 1;
+  repeated bytes values = 2;
+}
+
+message UpdateOperation {
+  repeated bytes keys = 1;
+  repeated bytes values = 2;
+}
+
+message DeleteOperation {
+  repeated bytes keys = 1;
+}
