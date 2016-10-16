@@ -58,10 +58,20 @@ public final class Client implements Closeable {
     return MessageBuilder.buildGetOp(GetOperation.Type.Equal, "key2".getBytes());
   }
 
+  private static Message genCreateReq() {
+    return MessageBuilder.buildCreateOp("foo");
+  }
+
+  private static Message genDropReq() {
+    return MessageBuilder.buildDropOp("foo");
+  }
+
   public static void main(String[] args) {
     Client client = new Client();
+    client.sendMsg("http://localhost:8000/create", genCreateReq());
     client.sendMsg("http://localhost:8000/insert", genInsertReq());
     client.sendMsg("http://localhost:8000/get", genGetReq());
+    client.sendMsg("http://localhost:8000/drop", genDropReq());
   }
 
 }

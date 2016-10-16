@@ -40,6 +40,18 @@ public final class DataNode {
     port(port);
     threadPool(maxThreads, minThreads, timeOutMillis);
     get("/", (req, res) -> "kdb DataNode");
+    post("/create", (request, response) -> {
+        byte[] data = request.bodyAsBytes();
+        Message msg = Message.parseFrom(data);
+        log.info("create table {}", msg);
+        return "table created";
+      });
+    post("/drop", (request, response) -> {
+        byte[] data = request.bodyAsBytes();
+        Message msg = Message.parseFrom(data);
+        log.info("drop table {}", msg);
+        return "table created";
+      });
     post("/insert", (request, response) -> {
         try {
           byte[] data = request.bodyAsBytes();
