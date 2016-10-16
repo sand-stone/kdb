@@ -30,18 +30,15 @@ public class Store implements Closeable {
   public Store(String location) {
     Utils.checkDir(location);
     conn = wiredtiger.open(location, dbconfig);
-    Session session = conn.open_session(null);
-    session.create("table:kdb", "(type=lsm,key_format=u,value_format=u)");
-    session.close(null);
   }
 
   public class Context implements Closeable {
     Session session;
     Cursor cursor;
 
-    public Context() {
+    public Context(String table) {
       session = Store.this.conn.open_session(null);
-      cursor = session.open_cursor("table:kdb", null, null);
+      cursor = session.open_cursor("table:"+table, null, null);
     }
 
     public void close() {
@@ -51,8 +48,20 @@ public class Store implements Closeable {
     }
   }
 
-  public Context getContext() {
-    return new Context();
+  public Context getContext(String table) {
+    return new Context(table);
+  }
+
+  public void create(String table) {
+    Session session = conn.open_session(null);
+    session.create("table:"+table, "(type=lsm,key_format=u,value_format=u)");
+    session.close(null);
+  }
+
+  public void drop(String table) {
+    Session session = conn.open_session(null);
+    session.drop("table:"+table, null);
+    session.close(null);
   }
 
   public void insert(Context ctx, Message msg) {
@@ -105,11 +114,13 @@ public class Store implements Closeable {
   public void handle(ByteBuffer data) throws IOException {
     Message msg = Message.parseFrom(data.array());
     if(msg.getType() == MessageType.Insert) {
-      try(Store.Context ctx = getContext()) {
+      String table = msg.getInsertOp().getTable();
+      try(Store.Context ctx = getContext(table)) {
         insert(ctx, msg);
       }
     } else if (msg.getType() == MessageType.Update) {
-      try(Store.Context ctx = getContext()) {
+      String table = msg.getUpdateOp().getTable();
+      try(Store.Context ctx = getContext(table)) {
         update(ctx, msg);
       }
     }

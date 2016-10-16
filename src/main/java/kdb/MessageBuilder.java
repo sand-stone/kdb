@@ -34,27 +34,30 @@ final class MessageBuilder {
     return Message.newBuilder().setType(MessageType.Drop).setDropOp(op).build();
   }
 
-  public static Message buildInsertOp(List<byte[]> keys, List<byte[]> values) {
+  public static Message buildInsertOp(String table, List<byte[]> keys, List<byte[]> values) {
     InsertOperation op = InsertOperation
       .newBuilder()
+      .setTable(table)
       .addAllKeys(keys.stream().map(k -> ByteString.copyFrom(k)).collect(toList()))
       .addAllValues(values.stream().map(v -> ByteString.copyFrom(v)).collect(toList()))
       .build();
     return Message.newBuilder().setType(MessageType.Insert).setInsertOp(op).build();
   }
 
-  public static Message buildUpdateOp(List<byte[]> keys, List<byte[]> values) {
+  public static Message buildUpdateOp(String table, List<byte[]> keys, List<byte[]> values) {
     UpdateOperation op = UpdateOperation
       .newBuilder()
+      .setTable(table)
       .addAllKeys(keys.stream().map(k -> ByteString.copyFrom(k)).collect(toList()))
       .addAllValues(values.stream().map(v -> ByteString.copyFrom(v)).collect(toList()))
       .build();
     return Message.newBuilder().setType(MessageType.Update).setUpdateOp(op).build();
   }
 
-  public static Message buildGetOp(GetOperation.Type opt, byte[] key) {
+  public static Message buildGetOp(String table, GetOperation.Type opt, byte[] key) {
     GetOperation op = GetOperation
       .newBuilder()
+      .setTable(table)
       .setOp(opt)
       .setKey(ByteString.copyFrom(key))
       .build();

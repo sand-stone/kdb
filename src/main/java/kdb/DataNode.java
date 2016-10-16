@@ -41,45 +41,52 @@ public final class DataNode {
     threadPool(maxThreads, minThreads, timeOutMillis);
     get("/", (req, res) -> "kdb DataNode");
     post("/service", (request, response) -> {
-        byte[] data = request.bodyAsBytes();
-        Message msg = Message.parseFrom(data);
-        log.info("create table {}", msg);
-        switch(msg.getType()) {
-        case Create:
-          break;
-        case Drop:
-          break;
-        case Get:
-          try {
+        try {
+          byte[] data = request.bodyAsBytes();
+          Message msg = Message.parseFrom(data);
+          String table;
+          log.info("msg {}", msg);
+          switch(msg.getType()) {
+          case Create:
+            table = msg.getCreateOp().getTable();
+            store.create(table);
+            break;
+          case Drop:
+            table = msg.getDropOp().getTable();
+            store.drop(table);
+            break;
+          case Get:
             byte[] ret = null;
-            try(Store.Context ctx = store.getContext()) {
+            table = msg.getGetOp().getTable();
+            try(Store.Context ctx = store.getContext(table)) {
               ret = store.get(ctx, msg);
             }
             return new String(ret);
-          } catch(Exception e) {
-            e.printStackTrace();
-            log.info(e.toString());
-            //throw e;
-          }
-          break;
-        case Insert:
-          if(standalone) {
-            try(Store.Context ctx = store.getContext()) {
-              store.insert(ctx, msg);
+            //break;
+          case Insert:
+            if(standalone) {
+              table = msg.getInsertOp().getTable();
+              try(Store.Context ctx = store.getContext(table)) {
+                store.insert(ctx, msg);
+              }
+            } else {
+              ring.zab.send(ByteBuffer.wrap(data), null);
             }
-          } else {
-            ring.zab.send(ByteBuffer.wrap(data), null);
-          }
-          break;
-        case Update:
-          if(standalone) {
-            try(Store.Context ctx = store.getContext()) {
-              store.update(ctx, msg);
+            break;
+          case Update:
+            if(standalone) {
+              table = msg.getUpdateOp().getTable();
+              try(Store.Context ctx = store.getContext(table)) {
+                store.update(ctx, msg);
+              }
+            } else {
+              ring.zab.send(ByteBuffer.wrap(data), null);
             }
-          } else {
-            ring.zab.send(ByteBuffer.wrap(data), null);
+            break;
           }
-          break;
+        } catch(Exception e) {
+          e.printStackTrace();
+          log.info(e.toString());
         }
         return "service done";
       });

@@ -51,11 +51,11 @@ public final class Client implements Closeable {
   private static Message genInsertReq() {
     List<byte[]> keys = Arrays.asList("key1".getBytes(), "key2".getBytes());
     List<byte[]> values = Arrays.asList("val1".getBytes(), "val2".getBytes());
-    return MessageBuilder.buildInsertOp(keys, values);
+    return MessageBuilder.buildInsertOp("foo", keys, values);
   }
 
   private static Message genGetReq() {
-    return MessageBuilder.buildGetOp(GetOperation.Type.Equal, "key2".getBytes());
+    return MessageBuilder.buildGetOp("foo", GetOperation.Type.Equal, "key2".getBytes());
   }
 
   private static Message genCreateReq() {
