@@ -68,10 +68,10 @@ public final class Client implements Closeable {
 
   public static void main(String[] args) {
     Client client = new Client();
-    client.sendMsg("http://localhost:8000/create", genCreateReq());
-    client.sendMsg("http://localhost:8000/insert", genInsertReq());
-    client.sendMsg("http://localhost:8000/get", genGetReq());
-    client.sendMsg("http://localhost:8000/drop", genDropReq());
+    client.sendMsg("http://localhost:8000/service", genCreateReq());
+    client.sendMsg("http://localhost:8000/service", genInsertReq());
+    client.sendMsg("http://localhost:8000/service", genGetReq());
+    client.sendMsg("http://localhost:8000/service", genDropReq());
   }
 
 }

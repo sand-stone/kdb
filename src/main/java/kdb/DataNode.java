@@ -40,75 +40,48 @@ public final class DataNode {
     port(port);
     threadPool(maxThreads, minThreads, timeOutMillis);
     get("/", (req, res) -> "kdb DataNode");
-    post("/create", (request, response) -> {
+    post("/service", (request, response) -> {
         byte[] data = request.bodyAsBytes();
         Message msg = Message.parseFrom(data);
         log.info("create table {}", msg);
-        return "table created";
-      });
-    post("/drop", (request, response) -> {
-        byte[] data = request.bodyAsBytes();
-        Message msg = Message.parseFrom(data);
-        log.info("drop table {}", msg);
-        return "table created";
-      });
-    post("/insert", (request, response) -> {
-        try {
-          byte[] data = request.bodyAsBytes();
+        switch(msg.getType()) {
+        case Create:
+          break;
+        case Drop:
+          break;
+        case Get:
+          try {
+            byte[] ret = null;
+            try(Store.Context ctx = store.getContext()) {
+              ret = store.get(ctx, msg);
+            }
+            return new String(ret);
+          } catch(Exception e) {
+            e.printStackTrace();
+            log.info(e.toString());
+            //throw e;
+          }
+          break;
+        case Insert:
           if(standalone) {
-            Message msg = Message.parseFrom(data);
-            log.info("msg {}", msg);
             try(Store.Context ctx = store.getContext()) {
               store.insert(ctx, msg);
             }
           } else {
             ring.zab.send(ByteBuffer.wrap(data), null);
           }
-          return "insert table\n";
-        } catch(Exception e) {
-          e.printStackTrace();
-          log.info(e.toString());
-          throw e;
-        }
-      });
-    post("/upsert", (request, response) -> {
-        try {
-          byte[] data = request.bodyAsBytes();
+          break;
+        case Update:
           if(standalone) {
-            Message msg = Message.parseFrom(data);
-            log.info("msg {}", msg);
             try(Store.Context ctx = store.getContext()) {
               store.update(ctx, msg);
             }
           } else {
             ring.zab.send(ByteBuffer.wrap(data), null);
           }
-          return "update table\n";
-        } catch(Exception e) {
-          e.printStackTrace();
-          log.info(e.toString());
-          throw e;
+          break;
         }
-      });
-    post("/get", (request, response) -> {
-        try {
-          byte[] data = request.bodyAsBytes();
-          Message msg = Message.parseFrom(data);
-          log.info("msg {}", msg);
-          byte[] ret;
-          try(Store.Context ctx = store.getContext()) {
-            ret = store.get(ctx, msg);
-          }
-          return new String(ret);
-        }  catch(Exception e) {
-          e.printStackTrace();
-          log.info(e.toString());
-          throw e;
-        }
-      });
-    post("/multiget", (request, response) -> {
-        byte[] data = request.bodyAsBytes();
-        return "multi\n";
+        return "service done";
       });
     init();
   }
