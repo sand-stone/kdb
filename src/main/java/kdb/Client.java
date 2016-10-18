@@ -66,12 +66,13 @@ public final class Client implements Closeable {
     return MessageBuilder.buildDropOp("foo");
   }
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws Exception {
     Client client = new Client();
     client.sendMsg("http://localhost:8000/service", genCreateReq());
     client.sendMsg("http://localhost:8000/service", genInsertReq());
+    Thread.currentThread().sleep(3000);
     client.sendMsg("http://localhost:8000/service", genGetReq());
-    client.sendMsg("http://localhost:8000/service", genDropReq());
+    //client.sendMsg("http://localhost:8000/service", genDropReq());
   }
 
 }

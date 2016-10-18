@@ -98,6 +98,7 @@ public class Store implements Closeable {
     ctx.cursor.reset();
     switch(msg.getGetOp().getOp()) {
     case Equal: {
+      log.info("{} look for {}", this, new String(msg.getGetOp().getKey().toByteArray()));
       ctx.cursor.putKeyByteArray(msg.getGetOp().getKey().toByteArray());
       if(ctx.cursor.search() == 0) {
         log.info("found");
@@ -112,7 +113,9 @@ public class Store implements Closeable {
   }
 
   public void handle(ByteBuffer data) throws IOException {
-    Message msg = Message.parseFrom(data.array());
+    byte[] arr = new byte[data.remaining()];
+    data.get(arr);
+    Message msg = Message.parseFrom(arr);
     if(msg.getType() == MessageType.Insert) {
       String table = msg.getInsertOp().getTable();
       try(Store.Context ctx = getContext(table)) {

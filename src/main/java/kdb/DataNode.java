@@ -20,8 +20,6 @@ import kdb.proto.XMessage.GetOperation;
 public final class DataNode {
   private static Logger log = LogManager.getLogger(DataNode.class);
 
-  private static final String rootData = "./datanode";
-
   public DataNode() {
 
   }
@@ -32,7 +30,7 @@ public final class DataNode {
     int timeOutMillis = 30000;
     int port = config.getInt("port");
     Store store = new Store(config.getString("store"));
-    boolean standalone = config.getBoolean("standalone");
+    boolean standalone = config.getBoolean("standalone", false);
     final Ring ring = new Ring(config.getString("ringaddr"), config.getString("leader"), config.getString("logDir"));;
     if(!standalone) {
       ring.bind(store);
@@ -61,7 +59,7 @@ public final class DataNode {
             try(Store.Context ctx = store.getContext(table)) {
               ret = store.get(ctx, msg);
             }
-            return new String(ret);
+            return ret == null? "Ooops": new String(ret);
             //break;
           case Insert:
             if(standalone) {
