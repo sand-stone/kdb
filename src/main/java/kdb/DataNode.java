@@ -93,6 +93,8 @@ public final class DataNode {
             os.write(MessageBuilder.buildResponse("Update").toByteArray());
             break;
           }
+          os.flush();
+          os.close();
         } catch(Exception e) {
           e.printStackTrace();
           log.info(e.toString());
