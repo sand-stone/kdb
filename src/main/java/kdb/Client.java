@@ -70,8 +70,10 @@ public final class Client implements Closeable {
     Client client = new Client();
     client.sendMsg("http://localhost:8000/service", genCreateReq());
     client.sendMsg("http://localhost:8000/service", genInsertReq());
-    Thread.currentThread().sleep(3000);
+    Thread.currentThread().sleep(1000);
     client.sendMsg("http://localhost:8000/service", genGetReq());
+    client.sendMsg("http://localhost:8001/service", genGetReq());
+    client.sendMsg("http://localhost:8002/service", genGetReq());
     //client.sendMsg("http://localhost:8000/service", genDropReq());
   }
 

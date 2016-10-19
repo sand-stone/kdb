@@ -52,7 +52,7 @@ public class Store implements Closeable {
     return new Context(table);
   }
 
-  public void create(String table) {
+  public synchronized void create(String table) {
     Session session = conn.open_session(null);
     session.create("table:"+table, "(type=lsm,key_format=u,value_format=u)");
     session.close(null);
@@ -126,6 +126,9 @@ public class Store implements Closeable {
       try(Store.Context ctx = getContext(table)) {
         update(ctx, msg);
       }
+    } else if(msg.getType() == MessageType.Create) {
+      String table = msg.getCreateOp().getTable();
+      create(table);
     }
   }
 

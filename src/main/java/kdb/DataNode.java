@@ -46,8 +46,12 @@ public final class DataNode {
           log.info("msg {}", msg);
           switch(msg.getType()) {
           case Create:
-            table = msg.getCreateOp().getTable();
-            store.create(table);
+            if(standalone) {
+              table = msg.getCreateOp().getTable();
+              store.create(table);
+            } else {
+              ring.zab.send(ByteBuffer.wrap(data), null);
+            }
             break;
           case Drop:
             table = msg.getDropOp().getTable();
