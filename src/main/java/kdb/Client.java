@@ -48,33 +48,4 @@ public final class Client implements Closeable {
     } catch(IOException e) {}
   }
 
-  private static Message genInsertReq() {
-    List<byte[]> keys = Arrays.asList("key1".getBytes(), "key2".getBytes());
-    List<byte[]> values = Arrays.asList("val1".getBytes(), "val2".getBytes());
-    return MessageBuilder.buildInsertOp("foo", keys, values);
-  }
-
-  private static Message genGetReq() {
-    return MessageBuilder.buildGetOp("foo", GetOperation.Type.Equal, "key2".getBytes());
-  }
-
-  private static Message genCreateReq() {
-    return MessageBuilder.buildCreateOp("foo");
-  }
-
-  private static Message genDropReq() {
-    return MessageBuilder.buildDropOp("foo");
-  }
-
-  public static void main(String[] args) throws Exception {
-    Client client = new Client();
-    client.sendMsg("http://localhost:8000/service", genCreateReq());
-    client.sendMsg("http://localhost:8000/service", genInsertReq());
-    Thread.currentThread().sleep(100);
-    client.sendMsg("http://localhost:8000/service", genGetReq());
-    client.sendMsg("http://localhost:8001/service", genGetReq());
-    client.sendMsg("http://localhost:8002/service", genGetReq());
-    //client.sendMsg("http://localhost:8000/service", genDropReq());
-  }
-
 }
