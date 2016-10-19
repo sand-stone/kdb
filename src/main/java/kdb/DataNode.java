@@ -44,6 +44,7 @@ public final class DataNode {
           Message msg = Message.parseFrom(data);
           String table;
           log.info("msg {}", msg);
+          OutputStream os = response.raw().getOutputStream();
           switch(msg.getType()) {
           case Create:
             if(standalone) {
@@ -52,10 +53,12 @@ public final class DataNode {
             } else {
               ring.zab.send(ByteBuffer.wrap(data), null);
             }
+            os.write(MessageBuilder.buildResponse("Create").toByteArray());
             break;
           case Drop:
             table = msg.getDropOp().getTable();
             store.drop(table);
+            os.write(MessageBuilder.buildResponse("Drop").toByteArray());
             break;
           case Get:
             byte[] ret = null;
@@ -63,8 +66,10 @@ public final class DataNode {
             try(Store.Context ctx = store.getContext(table)) {
               ret = store.get(ctx, msg);
             }
-            return ret == null? "Ooops": new String(ret);
-            //break;
+            if(ret != null) {
+              os.write(MessageBuilder.buildResponse(ret).toByteArray());
+            }
+            break;
           case Insert:
             if(standalone) {
               table = msg.getInsertOp().getTable();
@@ -74,6 +79,7 @@ public final class DataNode {
             } else {
               ring.zab.send(ByteBuffer.wrap(data), null);
             }
+            os.write(MessageBuilder.buildResponse("Insert").toByteArray());
             break;
           case Update:
             if(standalone) {
@@ -84,13 +90,14 @@ public final class DataNode {
             } else {
               ring.zab.send(ByteBuffer.wrap(data), null);
             }
+            os.write(MessageBuilder.buildResponse("Update").toByteArray());
             break;
           }
         } catch(Exception e) {
           e.printStackTrace();
           log.info(e.toString());
         }
-        return "service done";
+        return "service return";
       });
     init();
   }

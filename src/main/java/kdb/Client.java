@@ -16,6 +16,7 @@ import kdb.proto.XMessage.Message;
 import kdb.proto.XMessage.InsertOperation;
 import kdb.proto.XMessage.UpdateOperation;
 import kdb.proto.XMessage.GetOperation;
+import com.google.protobuf.InvalidProtocolBufferException;
 
 public final class Client implements Closeable {
   private static Logger log = LogManager.getLogger(Client.class);
@@ -34,10 +35,14 @@ public final class Client implements Closeable {
         .setBody(msg.toByteArray())
         .execute()
         .get();
-      //log.info("r: {}", r);
+      byte[] data = r.getResponseBodyAsBytes();
+      Message rsp = Message.parseFrom(data);
+      log.info("rsp: {}", rsp);
     } catch(InterruptedException e) {
       log.info(e);
     } catch(ExecutionException e) {
+      log.info(e);
+    } catch(InvalidProtocolBufferException e) {
       log.info(e);
     }
   }
