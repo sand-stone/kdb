@@ -34,7 +34,7 @@ public final class Client implements Closeable {
         .setBody(msg.toByteArray())
         .execute()
         .get();
-      log.info("r: {}", r);
+      //log.info("r: {}", r);
     } catch(InterruptedException e) {
       log.info(e);
     } catch(ExecutionException e) {

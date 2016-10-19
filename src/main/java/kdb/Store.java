@@ -14,6 +14,7 @@ import java.util.function.LongConsumer;
 import java.util.concurrent.*;
 import java.time.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ConcurrentHashMap;
 
 import kdb.proto.XMessage.Message;
 import kdb.proto.XMessage.InsertOperation;
@@ -26,25 +27,36 @@ public class Store implements Closeable {
   private Connection conn;
   private String db;
   private static final String dbconfig = "create,cache_size=1GB,eviction=(threads_max=2,threads_min=2),lsm_manager=(merge=true,worker_thread_max=3),checkpoint=(log_size=2GB,wait=3600)";
+  private ConcurrentHashMap<String, AtomicInteger> sessions;
 
   public Store(String location) {
     Utils.checkDir(location);
     conn = wiredtiger.open(location, dbconfig);
+    sessions = new ConcurrentHashMap<String, AtomicInteger>();
   }
 
   public class Context implements Closeable {
     Session session;
+    String table;
     Cursor cursor;
 
     public Context(String table) {
+      this.table = table;
       session = Store.this.conn.open_session(null);
       cursor = session.open_cursor("table:"+table, null, null);
+      if(sessions.get(table) == null) {
+        sessions.putIfAbsent(table, new AtomicInteger());
+      }
+      int v = sessions.get(table).getAndIncrement();
+      if(v < 0)
+        throw new KdbException("table is dropped");
     }
 
     public void close() {
       cursor.close();
       //session.checkpoint(null);
       session.close(null);
+      sessions.get(table).getAndDecrement();
     }
   }
 
@@ -53,15 +65,38 @@ public class Store implements Closeable {
   }
 
   public synchronized void create(String table) {
+    if(sessions.get(table) != null) {
+      //throw new KdbException("table existed");
+      log.info("{} table already existed", table);
+      return;
+    }
     Session session = conn.open_session(null);
     session.create("table:"+table, "(type=lsm,key_format=u,value_format=u)");
+    session.checkpoint(null);
     session.close(null);
   }
 
-  public void drop(String table) {
+  public synchronized void drop(String table) {
     Session session = conn.open_session(null);
-    session.drop("table:"+table, null);
+    if(sessions.get(table) == null) {
+      sessions.putIfAbsent(table, new AtomicInteger(-1));
+    }
+    int count;
+    AtomicInteger v = sessions.get(table);
+    while(true) {
+      while((count = v.get()) > 0) {
+        Thread.currentThread().yield();
+      }
+      if(v.get() < 0 || v.compareAndSet(0, -1))
+        break;
+    }
+    try {
+      session.drop("table:"+table, null);
+    } catch(WiredTigerException e) {
+      log.info("{} table not exist", table);
+    }
     session.close(null);
+    sessions.remove(table);
   }
 
   public void insert(Context ctx, Message msg) {
