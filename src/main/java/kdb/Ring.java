@@ -60,14 +60,14 @@ class Ring implements Runnable, StateMachine {
 
   @Override
   public ByteBuffer preprocess(Zxid zxid, ByteBuffer message) {
-    //log.debug("Preprocessing a message: {}", message);
+    //log.info("Preprocessing a message: {}", message);
     return message;
   }
 
   @Override
   public void deliver(Zxid zxid, ByteBuffer stateUpdate, String clientId,
                       Object ctx) {
-    log.info("quorum operation");
+    log.info("quorum deliver operation");
     try {
       store.handle(stateUpdate);
     } catch(IOException e) {
@@ -77,25 +77,27 @@ class Ring implements Runnable, StateMachine {
 
   @Override
   public void flushed(Zxid zxid, ByteBuffer request, Object ctx) {
-    log.debug("flush {} message: {}", zxid, ctx);
+    log.info("flush {} message: {}", zxid, ctx);
   }
 
   @Override
   public void save(FileOutputStream fos) {
-    log.debug("save snapshot");
+    log.info("save snapshot");
   }
 
   @Override
   public void restore(FileInputStream fis) {
-    log.debug("restore snapshot");
+    log.info("restore snapshot");
   }
 
   @Override
   public void snapshotDone(String filePath, Object ctx) {
+    log.info("snapshotDone");
   }
 
   @Override
   public void removed(String peerId, Object ctx) {
+    log.info("removed");
   }
 
   @Override
