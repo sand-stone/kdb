@@ -67,7 +67,7 @@ class Ring implements Runnable, StateMachine {
   @Override
   public void deliver(Zxid zxid, ByteBuffer stateUpdate, String clientId,
                       Object ctx) {
-    log.info("quorum deliver operation");
+    //log.info("quorum deliver operation");
     try {
       store.handle(stateUpdate);
     } catch(IOException e) {

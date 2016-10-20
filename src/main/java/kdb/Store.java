@@ -67,7 +67,7 @@ public class Store implements Closeable {
   public synchronized void create(String table) {
     if(sessions.get(table) != null) {
       //throw new KdbException("table existed");
-      log.info("{} table already existed", table);
+      //log.info("{} table already existed", table);
       return;
     }
     Session session = conn.open_session(null);
@@ -133,10 +133,9 @@ public class Store implements Closeable {
     ctx.cursor.reset();
     switch(msg.getGetOp().getOp()) {
     case Equal: {
-      log.info("{} look for {}", this, new String(msg.getGetOp().getKey().toByteArray()));
+      //log.info("{} look for {}", this, new String(msg.getGetOp().getKey().toByteArray()));
       ctx.cursor.putKeyByteArray(msg.getGetOp().getKey().toByteArray());
       if(ctx.cursor.search() == 0) {
-        log.info("found");
         ret = ctx.cursor.getValueByteArray();
       }
     }

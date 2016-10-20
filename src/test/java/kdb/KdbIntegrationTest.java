@@ -23,6 +23,7 @@ import kdb.proto.XMessage.GetOperation;
 import kdb.proto.XMessage.DropOperation;
 
 public class KdbIntegrationTest extends TestCase {
+  private static Logger log = LogManager.getLogger(KdbIntegrationTest.class);
 
   /**
    * Create the test case
@@ -45,8 +46,9 @@ public class KdbIntegrationTest extends TestCase {
   public void test0() {
     Client client = new Client();
     String table = "test0";
-    client.sendMsg("http://localhost:8000/service", MessageBuilder.buildCreateOp(table));
-    client.sendMsg("http://localhost:8000/service", MessageBuilder.buildDropOp(table));
+    Message msg = client.sendMsg("http://localhost:8000/service", MessageBuilder.buildCreateOp(table));
+    msg = client.sendMsg("http://localhost:8000/service", MessageBuilder.buildDropOp(table));
+    log.info("msg {}", msg);
   }
 
   public void test1() {
@@ -65,9 +67,11 @@ public class KdbIntegrationTest extends TestCase {
     Client client = new Client();
     String table = "test2";
     client.sendMsg("http://localhost:8000/service", MessageBuilder.buildCreateOp(table));
+    try { Thread.currentThread().sleep(500); } catch(Exception e) {}
     client.sendMsg("http://localhost:8000/service", MessageBuilder.buildInsertOp(table, keys, values));
-    try { Thread.currentThread().sleep(1000); } catch(Exception e) {}
-    client.sendMsg("http://localhost:8000/service", MessageBuilder.buildGetOp(table, GetOperation.Type.Equal, "testKey".getBytes()));
+    try { Thread.currentThread().sleep(500); } catch(Exception e) {}
+    Message msg = client.sendMsg("http://localhost:8000/service", MessageBuilder.buildGetOp(table, GetOperation.Type.Equal, "testKey".getBytes()));
+    log.info("msg {}", msg);
     try { Thread.currentThread().sleep(1000); } catch(Exception e) {}
     //client.sendMsg("http://localhost:8000/service", MessageBuilder.buildDropOp(table));
     assertTrue(true);
@@ -81,9 +85,10 @@ public class KdbIntegrationTest extends TestCase {
     client.sendMsg("http://localhost:8000/service", MessageBuilder.buildCreateOp(table));
     client.sendMsg("http://localhost:8000/service", MessageBuilder.buildInsertOp(table, keys, values));
     try { Thread.currentThread().sleep(1000); } catch(Exception e) {}
-    client.sendMsg("http://localhost:8000/service", MessageBuilder.buildGetOp(table, GetOperation.Type.Equal, "key2".getBytes()));
-    client.sendMsg("http://localhost:8001/service", MessageBuilder.buildGetOp(table, GetOperation.Type.Equal, "key2".getBytes()));
-    client.sendMsg("http://localhost:8002/service", MessageBuilder.buildGetOp(table, GetOperation.Type.Equal, "key2".getBytes()));
+    Message msg = client.sendMsg("http://localhost:8000/service", MessageBuilder.buildGetOp(table, GetOperation.Type.Equal, "key2".getBytes()));
+    msg = client.sendMsg("http://localhost:8001/service", MessageBuilder.buildGetOp(table, GetOperation.Type.Equal, "key2".getBytes()));
+    msg = client.sendMsg("http://localhost:8002/service", MessageBuilder.buildGetOp(table, GetOperation.Type.Equal, "key2".getBytes()));
+    log.info("msg {}", msg);
     try { Thread.currentThread().sleep(1000); } catch(Exception e) {}
     //client.sendMsg("http://localhost:8000/service", MessageBuilder.buildDropOp(table));
     assertTrue(true);

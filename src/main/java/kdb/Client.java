@@ -23,12 +23,15 @@ public final class Client implements Closeable {
   final AsyncHttpClientConfig config;
   AsyncHttpClient client;
 
+  final static Message nullMsg = MessageBuilder.buildErrorResponse("null");
+
   public Client() {
     config = new DefaultAsyncHttpClientConfig.Builder().setRequestTimeout(Integer.MAX_VALUE).build();
     client = new DefaultAsyncHttpClient(config);
   }
 
-  public void sendMsg(String url, Message msg) {
+  public Message sendMsg(String url, Message msg) {
+    Message rsp = nullMsg;
     try {
       Response r;
       r=client.preparePost(url)
@@ -36,7 +39,7 @@ public final class Client implements Closeable {
         .execute()
         .get();
       byte[] data = r.getResponseBodyAsBytes();
-      Message rsp = Message.parseFrom(data);
+      rsp = Message.parseFrom(data);
       log.info("rsp: {}", rsp);
     } catch(InterruptedException e) {
       log.info(e);
@@ -45,6 +48,7 @@ public final class Client implements Closeable {
     } catch(InvalidProtocolBufferException e) {
       log.info(e);
     }
+    return rsp;
   }
 
   public void close() {

@@ -43,7 +43,7 @@ public final class DataNode {
           byte[] data = request.bodyAsBytes();
           Message msg = Message.parseFrom(data);
           String table;
-          log.info("msg {}", msg);
+          //log.info("msg {}", msg);
           OutputStream os = response.raw().getOutputStream();
           switch(msg.getType()) {
           case Create:
