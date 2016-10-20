@@ -10,4 +10,8 @@ public class KdbException extends RuntimeException {
     super(msg);
   }
 
+  public KdbException(Exception e) {
+    super(e);
+  }
+
 }
