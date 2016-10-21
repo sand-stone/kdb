@@ -73,7 +73,7 @@ public class KdbIntegrationTest extends TestCase {
     Message msg = client.sendMsg("http://localhost:8000/service", MessageBuilder.buildGetOp(table, GetOperation.Type.Equal, "testKey".getBytes()));
     log.info("msg {}", msg);
     try { Thread.currentThread().sleep(1000); } catch(Exception e) {}
-    //client.sendMsg("http://localhost:8000/service", MessageBuilder.buildDropOp(table));
+    client.sendMsg("http://localhost:8000/service", MessageBuilder.buildDropOp(table));
     assertTrue(true);
   }
 
@@ -90,7 +90,7 @@ public class KdbIntegrationTest extends TestCase {
     msg = client.sendMsg("http://localhost:8002/service", MessageBuilder.buildGetOp(table, GetOperation.Type.Equal, "key2".getBytes()));
     log.info("msg {}", msg);
     try { Thread.currentThread().sleep(1000); } catch(Exception e) {}
-    //client.sendMsg("http://localhost:8000/service", MessageBuilder.buildDropOp(table));
+    client.sendMsg("http://localhost:8000/service", MessageBuilder.buildDropOp(table));
     assertTrue(true);
   }
 }
