@@ -178,7 +178,7 @@ public class HttpTransport {
 
   public static void main(String[] args) throws Exception {
     if(args.length < 1) {
-      System.out.println("java -cp ./target/kdb-1.0-SNAPSHOT.jar kdb.DataNode conf/datanode.properties");
+      System.out.println("java -cp ./target/kdb-1.0-SNAPSHOT.jar kdb.HttpTransport conf/datanode.properties");
       return;
     }
     File propertiesFile = new File(args[0]);

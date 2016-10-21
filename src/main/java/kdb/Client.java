@@ -74,9 +74,4 @@ public final class Client implements Closeable {
     } catch(IOException e) {}
   }
 
-  public static void main(String[] args) {
-    Client client = new Client();
-    client.sendMsg("http://localhost:8000/service", "hello world");
-    client.sendMsg("http://localhost:8000/service", MessageBuilder.nullMsg);
-  }
 }
