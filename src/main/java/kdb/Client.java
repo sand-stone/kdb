@@ -51,10 +51,34 @@ public final class Client implements Closeable {
     return rsp;
   }
 
+  public Message sendMsg(String url, String msg) {
+    Message rsp = nullMsg;
+    try {
+      Response r;
+      r=client.prepareGet(url)
+        .setBody(msg.getBytes())
+        .execute()
+        .get();
+      byte[] data = r.getResponseBodyAsBytes();
+      //rsp = Message.parseFrom(data);
+      log.info("rsp: {}", data);
+    } catch(InterruptedException e) {
+      log.info(e);
+    } catch(ExecutionException e) {
+      log.info(e);
+    }
+    return rsp;
+  }
+
   public void close() {
     try {
       client.close();
     } catch(IOException e) {}
   }
 
+  public static void main(String[] args) {
+    Client client = new Client();
+    client.sendMsg("http://localhost:8000/service", "hello world");
+    client.sendMsg("http://localhost:8000/service", nullMsg);
+  }
 }

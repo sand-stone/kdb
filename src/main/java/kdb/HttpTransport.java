@@ -26,15 +26,20 @@ import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.util.AsciiString;
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import static io.netty.handler.codec.http.HttpVersion.*;
+import java.io.File;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.commons.configuration2.*;
+import org.apache.commons.configuration2.builder.fluent.Configurations;
 
 public class HttpTransport {
-
-  static final boolean SSL = System.getProperty("ssl") != null;
-  static final int PORT = Integer.parseInt(System.getProperty("port", SSL? "8443" : "8080"));
+  private static Logger log = LogManager.getLogger(HttpTransport.class);
 
   public HttpTransport() { }
 
-  public void start() {
+  public void start(PropertiesConfiguration config) {
+    int port = config.getInt("port");
+    boolean SSL = config.getBoolean("ssl", false);
     final SslContext sslCtx;
     if (SSL) {
       try {
@@ -57,11 +62,7 @@ public class HttpTransport {
         .handler(new LoggingHandler(LogLevel.INFO))
         .childHandler(new HttpKdbServerInitializer(sslCtx));
 
-      Channel ch = b.bind(PORT).sync().channel();
-
-      System.err.println("Open your web browser and navigate to " +
-                         (SSL? "https" : "http") + "://127.0.0.1:" + PORT + '/');
-
+      Channel ch = b.bind(port).sync().channel();
       ch.closeFuture().sync();
     } catch(Exception e) {
       throw new KdbException(e);
@@ -89,6 +90,7 @@ public class HttpTransport {
       if (msg instanceof HttpRequest) {
         HttpRequest req = (HttpRequest) msg;
 
+        log.info("msg {}", msg);
         if (HttpUtil.is100ContinueExpected(req)) {
           ctx.write(new DefaultFullHttpResponse(HTTP_1_1, CONTINUE));
         }
@@ -132,7 +134,19 @@ public class HttpTransport {
     }
   }
 
-  public static void main(String[] args) {
-    new HttpTransport().start();
+  public static void main(String[] args) throws Exception {
+    if(args.length < 1) {
+      System.out.println("java -cp ./target/kdb-1.0-SNAPSHOT.jar kdb.DataNode conf/datanode.properties");
+      return;
+    }
+    File propertiesFile = new File(args[0]);
+    if(!propertiesFile.exists()) {
+      System.out.printf("config file %s does not exist", propertiesFile.getName());
+      return;
+    }
+    Configurations configs = new Configurations();
+    PropertiesConfiguration config = configs.properties(propertiesFile);
+
+    new HttpTransport().start(config);
   }
 }

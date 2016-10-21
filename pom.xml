@@ -235,8 +235,9 @@
               <include>org.apache.commons:commons-configuration2</include>
               <include>commons-logging:commons-logging</include>
               <include>commons-beanutils:commons-beanutils</include>
-              <include>org.asynchttpclient:async-http-client</include>
               <include>io.netty:netty-all</include>
+              <include>org.asynchttpclient:async-http-client</include>
+              <include>org.asynchttpclient:async-http-client-netty-utils</include>
               <include>org.reactivestreams:reactive-streams</include>
               <include>com.typesafe.netty:netty-reactive-streams</include>
               <include>org.javassist:javassist</include>
@@ -399,6 +400,11 @@
       <groupId>org.asynchttpclient</groupId>
       <artifactId>async-http-client</artifactId>
       <version>2.0.18</version>
+    </dependency>
+    <dependency>
+      <groupId>org.asynchttpclient</groupId>
+      <artifactId>async-http-client-netty-utils</artifactId>
+      <version>2.0.19</version>
     </dependency>
     <dependency>
       <groupId>javax.validation</groupId>
