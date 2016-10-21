@@ -23,15 +23,13 @@ public final class Client implements Closeable {
   final AsyncHttpClientConfig config;
   AsyncHttpClient client;
 
-  final static Message nullMsg = MessageBuilder.buildErrorResponse("null");
-
   public Client() {
     config = new DefaultAsyncHttpClientConfig.Builder().setRequestTimeout(Integer.MAX_VALUE).build();
     client = new DefaultAsyncHttpClient(config);
   }
 
   public Message sendMsg(String url, Message msg) {
-    Message rsp = nullMsg;
+    Message rsp = MessageBuilder.nullMsg;
     try {
       Response r;
       r=client.preparePost(url)
@@ -52,7 +50,7 @@ public final class Client implements Closeable {
   }
 
   public Message sendMsg(String url, String msg) {
-    Message rsp = nullMsg;
+    Message rsp = MessageBuilder.nullMsg;
     try {
       Response r;
       r=client.prepareGet(url)
@@ -61,7 +59,7 @@ public final class Client implements Closeable {
         .get();
       byte[] data = r.getResponseBodyAsBytes();
       //rsp = Message.parseFrom(data);
-      log.info("rsp: {}", data);
+      log.info("rsp: {}", new String(data));
     } catch(InterruptedException e) {
       log.info(e);
     } catch(ExecutionException e) {
@@ -79,6 +77,6 @@ public final class Client implements Closeable {
   public static void main(String[] args) {
     Client client = new Client();
     client.sendMsg("http://localhost:8000/service", "hello world");
-    client.sendMsg("http://localhost:8000/service", nullMsg);
+    client.sendMsg("http://localhost:8000/service", MessageBuilder.nullMsg);
   }
 }

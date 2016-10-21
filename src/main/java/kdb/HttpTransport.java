@@ -20,17 +20,25 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.FullHttpMessage;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.codec.http.HttpObjectAggregator;
+import io.netty.handler.codec.DecoderResult;
 import io.netty.util.AsciiString;
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import static io.netty.handler.codec.http.HttpVersion.*;
 import java.io.File;
+import io.netty.buffer.ByteBuf;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.commons.configuration2.*;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
+import kdb.proto.XMessage.Message;
+import com.google.protobuf.InvalidProtocolBufferException;
 
 public class HttpTransport {
   private static Logger log = LogManager.getLogger(HttpTransport.class);
@@ -52,6 +60,14 @@ public class HttpTransport {
       sslCtx = null;
     }
 
+    Store store = new Store(config.getString("store"));
+    boolean standalone = config.getBoolean("standalone", false);
+    final Ring ring = new Ring(config.getString("ringaddr"), config.getString("leader"), config.getString("logDir"));
+    if(!standalone) {
+      ring.bind(store);
+    }
+    DataNode datanode = new DataNode(ring, store, standalone);
+
     EventLoopGroup bossGroup = new NioEventLoopGroup(1);
     EventLoopGroup workerGroup = new NioEventLoopGroup();
     try {
@@ -60,7 +76,7 @@ public class HttpTransport {
       b.group(bossGroup, workerGroup)
         .channel(NioServerSocketChannel.class)
         .handler(new LoggingHandler(LogLevel.INFO))
-        .childHandler(new HttpKdbServerInitializer(sslCtx));
+        .childHandler(new HttpKdbServerInitializer(sslCtx, datanode));
 
       Channel ch = b.bind(port).sync().channel();
       ch.closeFuture().sync();
@@ -73,12 +89,17 @@ public class HttpTransport {
   }
 
   public static class HttpKdbServerHandler extends ChannelInboundHandlerAdapter {
-    private static final byte[] CONTENT = { 'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd' };
+    private static final byte[] Ping = { 'H', 'e', 'l', 'l', 'o', ' ', 'K', 'd', 'b'};
 
     private static final AsciiString CONTENT_TYPE = new AsciiString("Content-Type");
     private static final AsciiString CONTENT_LENGTH = new AsciiString("Content-Length");
     private static final AsciiString CONNECTION = new AsciiString("Connection");
     private static final AsciiString KEEP_ALIVE = new AsciiString("keep-alive");
+    private DataNode datanode;
+
+    public HttpKdbServerHandler(DataNode datanode) {
+      this.datanode = datanode;
+    }
 
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) {
@@ -86,19 +107,37 @@ public class HttpTransport {
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) {
-      if (msg instanceof HttpRequest) {
-        HttpRequest req = (HttpRequest) msg;
-
-        log.info("msg {}", msg);
+    public void channelRead(ChannelHandlerContext ctx, Object data) {
+      if (data instanceof HttpRequest) {
+        FullHttpResponse response;
+        HttpRequest req = (HttpRequest)data;
         if (HttpUtil.is100ContinueExpected(req)) {
           ctx.write(new DefaultFullHttpResponse(HTTP_1_1, CONTINUE));
         }
+        log.info("req method {}", req.getMethod());
+        log.info("req method {}", req.getUri());
+        if(req.getMethod() == HttpMethod.POST) {
+          FullHttpMessage m = (FullHttpMessage) data;
+          Message msg;
+          try {
+            ByteBuf buf = m.content();
+            byte[] bytes = new byte[buf.readableBytes()];
+            buf.readBytes(bytes);
+            msg = Message.parseFrom(bytes);
+            msg = datanode.process(msg);
+          } catch(InvalidProtocolBufferException e) {
+            log.info(e);
+            msg = MessageBuilder.nullMsg;
+          }
+          response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.wrappedBuffer(msg.toByteArray()));
+          response.headers().set(CONTENT_TYPE, "application/octet-stream");
+          response.headers().setInt(CONTENT_LENGTH, response.content().readableBytes());
+        } else {
+          response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.wrappedBuffer(Ping));
+          response.headers().set(CONTENT_TYPE, "text/plain");
+          response.headers().setInt(CONTENT_LENGTH, response.content().readableBytes());
+        }
         boolean keepAlive = HttpUtil.isKeepAlive(req);
-        FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.wrappedBuffer(CONTENT));
-        response.headers().set(CONTENT_TYPE, "text/plain");
-        response.headers().setInt(CONTENT_LENGTH, response.content().readableBytes());
-
         if (!keepAlive) {
           ctx.write(response).addListener(ChannelFutureListener.CLOSE);
         } else {
@@ -118,9 +157,11 @@ public class HttpTransport {
   public static class HttpKdbServerInitializer extends ChannelInitializer<SocketChannel> {
 
     private final SslContext sslCtx;
+    private DataNode datanode;
 
-    public HttpKdbServerInitializer(SslContext sslCtx) {
+    public HttpKdbServerInitializer(SslContext sslCtx, DataNode datanode) {
       this.sslCtx = sslCtx;
+      this.datanode = datanode;
     }
 
     @Override
@@ -130,7 +171,8 @@ public class HttpTransport {
         p.addLast(sslCtx.newHandler(ch.alloc()));
       }
       p.addLast(new HttpServerCodec());
-      p.addLast(new HttpKdbServerHandler());
+      p.addLast("aggregator", new HttpObjectAggregator(165536));
+      p.addLast(new HttpKdbServerHandler(datanode));
     }
   }
 

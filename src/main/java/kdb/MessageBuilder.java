@@ -17,6 +17,7 @@ import kdb.proto.XMessage.DropOperation;
 import kdb.proto.XMessage.Response;
 
 final class MessageBuilder {
+  final static Message nullMsg = MessageBuilder.buildErrorResponse("null");
 
   private MessageBuilder() {}
 
