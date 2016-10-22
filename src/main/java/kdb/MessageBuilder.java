@@ -39,6 +39,26 @@ final class MessageBuilder {
     return Message.newBuilder().setType(MessageType.Response).setResponse(op).build();
   }
 
+  public static Message buildResponse(byte[] key, byte[] value) {
+    ArrayList<byte[]> keys = new ArrayList<byte[]>();
+    keys.add(key);
+    ArrayList<byte[]> values = new ArrayList<byte[]>();
+    values.add(value);
+    return buildResponse("", keys, values);
+  }
+
+  public static Message buildResponse(String token, List<byte[]> keys, List<byte[]> values) {
+    Response op = Response
+      .newBuilder()
+      .setType(Response.Type.OK)
+      .setReason("OK")
+      .setToken(token)
+      .addAllKeys(keys.stream().map(k -> ByteString.copyFrom(k)).collect(toList()))
+      .addAllValues(values.stream().map(v -> ByteString.copyFrom(v)).collect(toList()))
+      .build();
+    return Message.newBuilder().setType(MessageType.Response).setResponse(op).build();
+  }
+
   public static Message buildResponse(byte[] values) {
     ArrayList<byte[]> list = new ArrayList<byte[]>();
     list.add(values);
@@ -92,11 +112,16 @@ final class MessageBuilder {
   }
 
   public static Message buildGetOp(String table, GetOperation.Type opt, byte[] key) {
+    return buildGetOp(table, opt, key, 1);
+  }
+
+  public static Message buildGetOp(String table, GetOperation.Type opt, byte[] key, int limit) {
     GetOperation op = GetOperation
       .newBuilder()
       .setTable(table)
       .setOp(opt)
       .setKey(ByteString.copyFrom(key))
+      .setLimit(limit)
       .build();
     return Message.newBuilder().setType(MessageType.Get).setGetOp(op).build();
   }

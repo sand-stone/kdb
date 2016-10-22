@@ -50,10 +50,7 @@ public final class DataNode {
         byte[] ret = null;
         table = msg.getGetOp().getTable();
         try(Store.Context ctx = store.getContext(table)) {
-          ret = store.get(ctx, msg);
-        }
-        if(ret != null) {
-          r = MessageBuilder.buildResponse(ret);
+          r = store.get(ctx, msg);
         }
         break;
       case Insert:

@@ -127,8 +127,9 @@ public class Store implements Closeable {
     }
   }
 
-  public byte[] get(Context ctx, Message msg) {
-    byte[] ret = null;
+  public Message get(Context ctx, Message msg) {
+    Message r = MessageBuilder.nullMsg;
+    byte[] key, value;
     assert msg.getType() == MessageType.Get;
     ctx.cursor.reset();
     switch(msg.getGetOp().getOp()) {
@@ -136,14 +137,36 @@ public class Store implements Closeable {
       //log.info("{} look for {}", this, new String(msg.getGetOp().getKey().toByteArray()));
       ctx.cursor.putKeyByteArray(msg.getGetOp().getKey().toByteArray());
       if(ctx.cursor.search() == 0) {
-        ret = ctx.cursor.getValueByteArray();
+        key = ctx.cursor.getKeyByteArray();
+        value = ctx.cursor.getValueByteArray();
+        r = MessageBuilder.buildResponse(key, value);
+      }
+    }
+      break;
+    case GreaterEqual: {
+      //log.info("{} look for {}", this, new String(msg.getGetOp().getKey().toByteArray()));
+      ctx.cursor.putKeyByteArray(msg.getGetOp().getKey().toByteArray());
+      SearchStatus status = ctx.cursor.search_near();
+      if(status == SearchStatus.FOUND || status == SearchStatus.LARGER) {
+        int limit = msg.getGetOp().getLimit();
+        //log.info("limit {}", limit);
+        List<byte[]> keys = new ArrayList<byte[]>();
+        List<byte[]> values = new ArrayList<byte[]>();
+        do {
+          key = ctx.cursor.getKeyByteArray();
+          value = ctx.cursor.getValueByteArray();
+          keys.add(key);
+          values.add(value);
+          log.info("key {} value {} ", new String(key), new String(value));
+        } while(--limit>0 && ctx.cursor.next() == 0);
+        r = MessageBuilder.buildResponse("", keys, values);
       }
     }
       break;
     default:
       break;
     }
-    return ret;
+    return r;
   }
 
   public void handle(ByteBuffer data) throws IOException {

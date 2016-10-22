@@ -34,8 +34,9 @@ message Response {
    }
   Type type = 1;
   string reason = 2;
-  repeated bytes keys = 3;
-  repeated bytes values = 4;
+  string token = 3;
+  repeated bytes keys = 4;
+  repeated bytes values = 5;
 }
 
 message GetOperation {
@@ -46,7 +47,9 @@ message GetOperation {
    }
   Type op = 1;
   string table = 2;
-  bytes key = 3;
+  string token = 3;
+  int32 limit = 4;
+  bytes key = 5;
 }
 
 message InsertOperation {
