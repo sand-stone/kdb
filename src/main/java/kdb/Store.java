@@ -83,8 +83,11 @@ public class Store implements Closeable {
       return;
     }
     Session session = conn.open_session(null);
-    session.create("table:"+table, "(type=lsm,key_format=u,value_format=u)");
-    session.close(null);
+    int r = session.create("table:"+table, "(type=lsm,key_format=u,value_format=u)");
+    if(r == 0)
+      session.close(null);
+    else
+      throw new KdbException("errro code:"+ r);
   }
 
   public void drop(String table) {
