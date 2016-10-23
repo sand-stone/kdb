@@ -66,7 +66,6 @@ public class Store implements Closeable {
 
     public void close() {
       cursor.close();
-      //session.checkpoint(null);
       session.close(null);
       sessions.get(table).getAndDecrement();
       done = true;
@@ -77,7 +76,7 @@ public class Store implements Closeable {
     return new Context(table);
   }
 
-  public synchronized void create(String table) {
+  public void create(String table) {
     if(sessions.get(table) != null) {
       //throw new KdbException("table existed");
       //log.info("{} table already existed", table);
@@ -85,12 +84,10 @@ public class Store implements Closeable {
     }
     Session session = conn.open_session(null);
     session.create("table:"+table, "(type=lsm,key_format=u,value_format=u)");
-    session.checkpoint(null);
     session.close(null);
   }
 
-  public synchronized void drop(String table) {
-    Session session = conn.open_session(null);
+  public void drop(String table) {
     if(sessions.get(table) == null) {
       sessions.putIfAbsent(table, new AtomicInteger(-1));
     }
@@ -103,6 +100,7 @@ public class Store implements Closeable {
       if(v.get() < 0 || v.compareAndSet(0, -1))
         break;
     }
+    Session session = conn.open_session(null);
     try {
       session.drop("table:"+table, null);
     } catch(WiredTigerException e) {
