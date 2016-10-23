@@ -114,8 +114,8 @@ public class HttpTransport {
         if (HttpUtil.is100ContinueExpected(req)) {
           ctx.write(new DefaultFullHttpResponse(HTTP_1_1, CONTINUE));
         }
-        log.info("req method {}", req.method());
-        log.info("req method {}", req.uri());
+        //log.info("req method {}", req.method());
+        //log.info("req method {}", req.uri());
         if(req.getMethod() == HttpMethod.POST) {
           FullHttpMessage m = (FullHttpMessage) data;
           Message msg;

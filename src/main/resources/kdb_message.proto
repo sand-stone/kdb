@@ -44,6 +44,7 @@ message GetOperation {
      Equal = 0;
      GreaterEqual = 1;
      LessEqual = 2;
+     None = 3;
    }
   Type op = 1;
   string table = 2;

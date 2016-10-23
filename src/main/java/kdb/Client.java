@@ -38,7 +38,7 @@ public final class Client implements Closeable {
         .get();
       byte[] data = r.getResponseBodyAsBytes();
       rsp = Message.parseFrom(data);
-      log.info("rsp: {}", rsp);
+      //log.info("rsp: {}", rsp);
     } catch(InterruptedException e) {
       log.info(e);
     } catch(ExecutionException e) {

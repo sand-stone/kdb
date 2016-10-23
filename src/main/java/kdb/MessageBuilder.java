@@ -18,6 +18,7 @@ import kdb.proto.XMessage.Response;
 
 final class MessageBuilder {
   final static Message nullMsg = MessageBuilder.buildErrorResponse("null");
+  final static Message emptyMsg = MessageBuilder.buildResponse("null");
 
   private MessageBuilder() {}
 
@@ -113,6 +114,16 @@ final class MessageBuilder {
 
   public static Message buildGetOp(String table, GetOperation.Type opt, byte[] key) {
     return buildGetOp(table, opt, key, 1);
+  }
+
+  public static Message buildGetOp(String token, GetOperation.Type opt, int limit) {
+    GetOperation op = GetOperation
+      .newBuilder()
+      .setOp(opt)
+      .setToken(token)
+      .setLimit(limit)
+      .build();
+    return Message.newBuilder().setType(MessageType.Get).setGetOp(op).build();
   }
 
   public static Message buildGetOp(String table, GetOperation.Type opt, byte[] key, int limit) {
