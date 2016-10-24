@@ -117,4 +117,39 @@ public class KdbIntegrationTest extends TestCase {
     client.sendMsg("http://localhost:8000/", MessageBuilder.buildDropOp(table));
   }
 
+  public void test5() {
+    int count = 10;
+    List<byte[]> keys = new ArrayList<byte[]>();
+    List<byte[]> values = new ArrayList<byte[]>();
+    for (int i = 0; i < count; i++) {
+      keys.add(("key"+i).getBytes());
+      values.add(("value-1-"+i).getBytes());
+    }
+    Client client = new Client();
+    String table = "test5";
+    client.sendMsg("http://localhost:8000/", MessageBuilder.buildCreateOp(table));
+    try { Thread.currentThread().sleep(500); } catch(Exception e) {}
+    client.sendMsg("http://localhost:8000/", MessageBuilder.buildInsertOp(table, keys, values));
+    try { Thread.currentThread().sleep(1000); } catch(Exception e) {}
+    keys.clear();
+    values.clear();
+    for (int i = 0; i < count; i++) {
+      keys.add(("key"+i).getBytes());
+      values.add(("value-2-"+i).getBytes());
+    }
+    client.sendMsg("http://localhost:8000/", MessageBuilder.buildUpdateOp(table, keys, values));
+    try { Thread.currentThread().sleep(1000); } catch(Exception e) {}
+    Message msg = client.sendMsg("http://localhost:8000/", MessageBuilder.buildGetOp(table, GetOperation.Type.GreaterEqual, "key2".getBytes(), 5));
+    //log.info("msg {}", msg);
+    if(msg.getResponse().getValuesCount() == 5) {
+       assertTrue(true);
+    } else {
+      assertTrue(false);
+    }
+    msg = client.sendMsg("http://localhost:8000/", MessageBuilder.buildGetOp(msg.getResponse().getToken(), GetOperation.Type.Done, 0));
+    try { Thread.currentThread().sleep(100); } catch(Exception e) {}
+    client.sendMsg("http://localhost:8000/", MessageBuilder.buildDropOp(table));
+    //log.info("drop table");
+  }
+
 }

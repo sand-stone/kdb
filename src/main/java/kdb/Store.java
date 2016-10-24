@@ -96,6 +96,7 @@ public class Store implements Closeable {
     }
     int count;
     AtomicInteger v = sessions.get(table);
+    //log.info("drop count {}", v);
     while(true) {
       while((count = v.get()) > 0) {
         Thread.currentThread().yield();
@@ -143,7 +144,7 @@ public class Store implements Closeable {
       } else {
         ctx.cursor.putValueByteArray(op.getValues(i).toByteArray());
       }
-      ctx.cursor.putValueByteArray(op.getValues(i).toByteArray());
+      ctx.cursor.putKeyByteArray(op.getKeys(i).toByteArray());
       ctx.cursor.update();
       ctx.cursor.reset();
     }
@@ -182,6 +183,7 @@ public class Store implements Closeable {
     Message r = MessageBuilder.nullMsg;
     byte[] key, value;
     assert msg.getType() == MessageType.Get;
+    //log.info("get {}", msg);
     if(!msg.getGetOp().getToken().equals("")) {
       switch(msg.getGetOp().getOp()) {
       case GreaterEqual:
@@ -190,7 +192,7 @@ public class Store implements Closeable {
       case LessEqual:
         r = buildbkw(ctx, msg.getGetOp().getLimit());
         break;
-      case None:
+      case Done:
         ctx.done = true;
         r = MessageBuilder.emptyMsg;
         break;
@@ -232,12 +234,12 @@ public class Store implements Closeable {
     }
       break;
     case LessEqual: {
-      log.info("{} look for {}", this, new String(msg.getGetOp().getKey().toByteArray()));
+      //log.info("{} look for {}", this, new String(msg.getGetOp().getKey().toByteArray()));
       ctx.cursor.putKeyByteArray(msg.getGetOp().getKey().toByteArray());
       SearchStatus status = ctx.cursor.search_near();
       if(status == SearchStatus.FOUND || status == SearchStatus.SMALLER) {
         int limit = msg.getGetOp().getLimit();
-        log.info("limit {}", limit);
+        //log.info("limit {}", limit);
         List<byte[]> keys = new ArrayList<byte[]>();
         List<byte[]> values = new ArrayList<byte[]>();
         do {
@@ -245,7 +247,7 @@ public class Store implements Closeable {
           value = ctx.cursor.getValueByteArray();
           keys.add(key);
           values.add(value);
-          log.info("key {} value {} ", new String(key), new String(value));
+          //log.info("key {} value {} ", new String(key), new String(value));
         } while(--limit>0 && ctx.cursor.prev() == 0);
         ctx.done = limit != 0? true : false;
         r = MessageBuilder.buildResponse(ctx.done? "" : ctx.token(), keys, values);
