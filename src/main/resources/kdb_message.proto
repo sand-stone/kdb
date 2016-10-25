@@ -51,6 +51,7 @@ message GetOperation {
   string token = 3;
   int32 limit = 4;
   bytes key = 5;
+  bytes key2 = 6;
 }
 
 message InsertOperation {

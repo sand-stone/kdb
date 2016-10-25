@@ -56,4 +56,17 @@ class Utils {
     }
   }
 
+  public static int memcmp(final byte[] a, final byte[] b) {
+    final int length = Math.min(a.length, b.length);
+    if (a == b) {  // Do this after accessing a.length and b.length
+      return 0;    // in order to NPE if either a or b is null.
+    }
+    for (int i = 0; i < length; i++) {
+      if (a[i] != b[i]) {
+        return (a[i] & 0xFF) - (b[i] & 0xFF);
+      }
+    }
+    return a.length - b.length;
+  }
+
 }

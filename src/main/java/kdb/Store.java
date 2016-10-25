@@ -40,6 +40,7 @@ public class Store implements Closeable {
     String table;
     Cursor cursor;
     boolean done;
+    byte[] bound;
 
     public Context(String table) {
       this.table = table;
@@ -54,6 +55,7 @@ public class Store implements Closeable {
         throw new KdbException("table is dropped");
       }
       done = false;
+      bound = null;
     }
 
     public String token() {
@@ -69,6 +71,7 @@ public class Store implements Closeable {
       session.close(null);
       sessions.get(table).getAndDecrement();
       done = true;
+      bound = null;
     }
   }
 
@@ -179,6 +182,22 @@ public class Store implements Closeable {
     return MessageBuilder.buildResponse(ctx.done? "" : ctx.token(), keys, values);
   }
 
+  private Message buildrange(Context ctx, int limit) {
+    byte[] key, value;
+    List<byte[]> keys = new ArrayList<byte[]>();
+    List<byte[]> values = new ArrayList<byte[]>();
+    while(--limit>0 && ctx.cursor.next() == 0) {
+      key = ctx.cursor.getKeyByteArray();
+      if(Utils.memcmp(key, ctx.bound) > 0)
+        break;
+      value = ctx.cursor.getValueByteArray();
+      keys.add(key);
+      values.add(value);
+    }
+    ctx.done = limit != 0? true : false;
+    return MessageBuilder.buildResponse(ctx.done? "" : ctx.token(), keys, values);
+  }
+
   public Message get(Context ctx, Message msg) {
     Message r = MessageBuilder.nullMsg;
     byte[] key, value;
@@ -192,6 +211,12 @@ public class Store implements Closeable {
       case LessEqual:
         r = buildbkw(ctx, msg.getGetOp().getLimit());
         break;
+      case Equal:
+        if(ctx.bound != null) {
+          r = buildrange(ctx, msg.getGetOp().getLimit());
+        } else
+          r = MessageBuilder.emptyMsg;
+        break;
       case Done:
         ctx.done = true;
         r = MessageBuilder.emptyMsg;
@@ -203,12 +228,39 @@ public class Store implements Closeable {
     switch(msg.getGetOp().getOp()) {
     case Equal: {
       //log.info("{} look for {}", this, new String(msg.getGetOp().getKey().toByteArray()));
-      ctx.cursor.putKeyByteArray(msg.getGetOp().getKey().toByteArray());
-      if(ctx.cursor.search() == 0) {
-        key = ctx.cursor.getKeyByteArray();
-        value = ctx.cursor.getValueByteArray();
-        ctx.done = true;
-        r = MessageBuilder.buildResponse(key, value);
+      if(msg.getGetOp().getKey2().size() == 0) {
+        if(msg.getGetOp().getKey().size() > 0) {
+          ctx.cursor.putKeyByteArray(msg.getGetOp().getKey().toByteArray());
+          if(ctx.cursor.search() == 0) {
+            key = ctx.cursor.getKeyByteArray();
+            value = ctx.cursor.getValueByteArray();
+            ctx.done = true;
+            r = MessageBuilder.buildResponse(key, value);
+          }
+        }
+      } else if(msg.getGetOp().getKey().size() > 0) {
+        //log.info("{} look for {}", this, new String(msg.getGetOp().getKey().toByteArray()));
+        //log.info("{} look for {}", this, new String(msg.getGetOp().getKey2().toByteArray()));
+        int limit = msg.getGetOp().getLimit();
+        ctx.cursor.putKeyByteArray(msg.getGetOp().getKey().toByteArray());
+        SearchStatus status = ctx.cursor.search_near();
+        if(status == SearchStatus.FOUND || status == SearchStatus.LARGER) {
+          List<byte[]> keys = new ArrayList<byte[]>();
+          List<byte[]> values = new ArrayList<byte[]>();
+          byte[] k2 = msg.getGetOp().getKey2().toByteArray();
+          int x = 0;
+          do {
+            key = ctx.cursor.getKeyByteArray();
+            if(Utils.memcmp(key, k2) > 0)
+              break;
+            value = ctx.cursor.getValueByteArray();
+            keys.add(key);
+            values.add(value);
+          } while(--limit>0 && ctx.cursor.next() == 0);
+          ctx.done = limit != 0? true : false;
+          ctx.bound = k2;
+          r = MessageBuilder.buildResponse(ctx.done? "" : ctx.token(), keys, values);
+        }
       }
     }
       break;
@@ -253,35 +305,35 @@ public class Store implements Closeable {
         r = MessageBuilder.buildResponse(ctx.done? "" : ctx.token(), keys, values);
       }
     }
-    break;
+      break;
     default:
       break;
-  }
-  return r;
-}
-
-public void handle(ByteBuffer data) throws IOException {
-  byte[] arr = new byte[data.remaining()];
-  data.get(arr);
-  Message msg = Message.parseFrom(arr);
-  if(msg.getType() == MessageType.Insert) {
-    String table = msg.getInsertOp().getTable();
-    try(Store.Context ctx = getContext(table)) {
-      insert(ctx, msg);
     }
-  } else if (msg.getType() == MessageType.Update) {
-    String table = msg.getUpdateOp().getTable();
-    try(Store.Context ctx = getContext(table)) {
-      update(ctx, msg);
-    }
-  } else if(msg.getType() == MessageType.Create) {
-    String table = msg.getCreateOp().getTable();
-    create(table);
+    return r;
   }
-}
 
-public void close() {
-  conn.close(null);
-}
+  public void handle(ByteBuffer data) throws IOException {
+    byte[] arr = new byte[data.remaining()];
+    data.get(arr);
+    Message msg = Message.parseFrom(arr);
+    if(msg.getType() == MessageType.Insert) {
+      String table = msg.getInsertOp().getTable();
+      try(Store.Context ctx = getContext(table)) {
+        insert(ctx, msg);
+      }
+    } else if (msg.getType() == MessageType.Update) {
+      String table = msg.getUpdateOp().getTable();
+      try(Store.Context ctx = getContext(table)) {
+        update(ctx, msg);
+      }
+    } else if(msg.getType() == MessageType.Create) {
+      String table = msg.getCreateOp().getTable();
+      create(table);
+    }
+  }
+
+  public void close() {
+    conn.close(null);
+  }
 
 }

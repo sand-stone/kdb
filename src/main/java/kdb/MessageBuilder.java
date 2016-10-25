@@ -137,4 +137,20 @@ public final class MessageBuilder {
     return Message.newBuilder().setType(MessageType.Get).setGetOp(op).build();
   }
 
+  public static Message buildGetOp(String table, byte[] key, byte[] key2) {
+    return buildGetOp(table, key, key2, 1);
+  }
+
+  public static Message buildGetOp(String table, byte[] key, byte[] key2, int limit) {
+    GetOperation op = GetOperation
+      .newBuilder()
+      .setTable(table)
+      .setOp(GetOperation.Type.Equal)
+      .setKey(ByteString.copyFrom(key))
+      .setKey2(ByteString.copyFrom(key2))
+      .setLimit(limit)
+      .build();
+    return Message.newBuilder().setType(MessageType.Get).setGetOp(op).build();
+  }
+
 }
