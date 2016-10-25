@@ -201,6 +201,7 @@ public class Store implements Closeable {
   public Message get(Context ctx, Message msg) {
     Message r = MessageBuilder.nullMsg;
     byte[] key, value;
+    SearchStatus status;
     assert msg.getType() == MessageType.Get;
     //log.info("get {}", msg);
     if(!msg.getGetOp().getToken().equals("")) {
@@ -211,7 +212,7 @@ public class Store implements Closeable {
       case LessEqual:
         r = buildbkw(ctx, msg.getGetOp().getLimit());
         break;
-      case Equal:
+      case Between:
         if(ctx.bound != null) {
           r = buildrange(ctx, msg.getGetOp().getLimit());
         } else
@@ -226,24 +227,25 @@ public class Store implements Closeable {
     }
     ctx.cursor.reset();
     switch(msg.getGetOp().getOp()) {
-    case Equal: {
+    case Equal:
       //log.info("{} look for {}", this, new String(msg.getGetOp().getKey().toByteArray()));
-      if(msg.getGetOp().getKey2().size() == 0) {
-        if(msg.getGetOp().getKey().size() > 0) {
-          ctx.cursor.putKeyByteArray(msg.getGetOp().getKey().toByteArray());
-          if(ctx.cursor.search() == 0) {
-            key = ctx.cursor.getKeyByteArray();
-            value = ctx.cursor.getValueByteArray();
-            ctx.done = true;
-            r = MessageBuilder.buildResponse(key, value);
-          }
+      if(msg.getGetOp().getKey().size() > 0) {
+        ctx.cursor.putKeyByteArray(msg.getGetOp().getKey().toByteArray());
+        if(ctx.cursor.search() == 0) {
+          key = ctx.cursor.getKeyByteArray();
+          value = ctx.cursor.getValueByteArray();
+          ctx.done = true;
+          r = MessageBuilder.buildResponse(key, value);
         }
-      } else if(msg.getGetOp().getKey().size() > 0) {
+      }
+      break;
+    case Between:
+      if(msg.getGetOp().getKey().size() > 0) {
         //log.info("{} look for {}", this, new String(msg.getGetOp().getKey().toByteArray()));
         //log.info("{} look for {}", this, new String(msg.getGetOp().getKey2().toByteArray()));
         int limit = msg.getGetOp().getLimit();
         ctx.cursor.putKeyByteArray(msg.getGetOp().getKey().toByteArray());
-        SearchStatus status = ctx.cursor.search_near();
+        status = ctx.cursor.search_near();
         if(status == SearchStatus.FOUND || status == SearchStatus.LARGER) {
           List<byte[]> keys = new ArrayList<byte[]>();
           List<byte[]> values = new ArrayList<byte[]>();
@@ -262,12 +264,11 @@ public class Store implements Closeable {
           r = MessageBuilder.buildResponse(ctx.done? "" : ctx.token(), keys, values);
         }
       }
-    }
       break;
-    case GreaterEqual: {
+    case GreaterEqual:
       //log.info("{} look for {}", this, new String(msg.getGetOp().getKey().toByteArray()));
       ctx.cursor.putKeyByteArray(msg.getGetOp().getKey().toByteArray());
-      SearchStatus status = ctx.cursor.search_near();
+      status = ctx.cursor.search_near();
       if(status == SearchStatus.FOUND || status == SearchStatus.LARGER) {
         int limit = msg.getGetOp().getLimit();
         //log.info("limit {}", limit);
@@ -283,12 +284,11 @@ public class Store implements Closeable {
         ctx.done = limit != 0? true : false;
         r = MessageBuilder.buildResponse(ctx.done? "" : ctx.token(), keys, values);
       }
-    }
       break;
-    case LessEqual: {
+    case LessEqual:
       //log.info("{} look for {}", this, new String(msg.getGetOp().getKey().toByteArray()));
       ctx.cursor.putKeyByteArray(msg.getGetOp().getKey().toByteArray());
-      SearchStatus status = ctx.cursor.search_near();
+      status = ctx.cursor.search_near();
       if(status == SearchStatus.FOUND || status == SearchStatus.SMALLER) {
         int limit = msg.getGetOp().getLimit();
         //log.info("limit {}", limit);
@@ -304,7 +304,6 @@ public class Store implements Closeable {
         ctx.done = limit != 0? true : false;
         r = MessageBuilder.buildResponse(ctx.done? "" : ctx.token(), keys, values);
       }
-    }
       break;
     default:
       break;

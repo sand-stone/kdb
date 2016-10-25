@@ -145,7 +145,7 @@ public final class MessageBuilder {
     GetOperation op = GetOperation
       .newBuilder()
       .setTable(table)
-      .setOp(GetOperation.Type.Equal)
+      .setOp(GetOperation.Type.Between)
       .setKey(ByteString.copyFrom(key))
       .setKey2(ByteString.copyFrom(key2))
       .setLimit(limit)
