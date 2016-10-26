@@ -119,8 +119,9 @@ public class HttpTransport {
         if(req.getMethod() == HttpMethod.POST) {
           FullHttpMessage m = (FullHttpMessage) data;
           Message msg;
+          ByteBuf buf = null;
           try {
-            ByteBuf buf = m.content();
+            buf = m.content();
             byte[] bytes = new byte[buf.readableBytes()];
             buf.readBytes(bytes);
             msg = Message.parseFrom(bytes);
@@ -128,6 +129,9 @@ public class HttpTransport {
           } catch(InvalidProtocolBufferException e) {
             log.info(e);
             msg = MessageBuilder.nullMsg;
+          } finally {
+            if(buf != null)
+              buf.release();
           }
           response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.wrappedBuffer(msg.toByteArray()));
           response.headers().set(CONTENT_TYPE, "application/octet-stream");

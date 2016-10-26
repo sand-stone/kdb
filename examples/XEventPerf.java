@@ -78,7 +78,7 @@ public class XEventPerf {
           values));
         keys.clear();
         values.clear();
-        try {Thread.currentThread().sleep(1000);} catch(Exception ex) {}
+        //try {Thread.currentThread().sleep(100);} catch(Exception ex) {}
       }
       client.close();
       System.out.printf("writer %d exit \n", id);
