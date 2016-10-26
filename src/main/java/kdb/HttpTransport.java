@@ -39,6 +39,7 @@ import org.apache.commons.configuration2.*;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
 import kdb.proto.XMessage.Message;
 import com.google.protobuf.InvalidProtocolBufferException;
+import kdb.jzab.ZabException;
 
 public class HttpTransport {
   private static Logger log = LogManager.getLogger(HttpTransport.class);
@@ -129,6 +130,15 @@ public class HttpTransport {
           } catch(InvalidProtocolBufferException e) {
             log.info(e);
             msg = MessageBuilder.nullMsg;
+          } catch(ZabException.TooManyPendingRequests e) {
+            log.info(e);
+            msg = MessageBuilder.nullMsg;
+          } catch(ZabException.InvalidPhase e) {
+            log.info(e);
+            msg = MessageBuilder.nullMsg;
+          } catch(KdbException e) {
+            log.info(e);
+            msg = MessageBuilder.buildErrorResponse(e.getMessage());
           } finally {
             if(buf != null)
               buf.release();

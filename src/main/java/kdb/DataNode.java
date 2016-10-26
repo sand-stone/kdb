@@ -12,6 +12,7 @@ import kdb.proto.XMessage.Message;
 import kdb.proto.XMessage.InsertOperation;
 import kdb.proto.XMessage.UpdateOperation;
 import kdb.proto.XMessage.GetOperation;
+import kdb.jzab.ZabException;
 
 public final class DataNode {
   private static Logger log = LogManager.getLogger(DataNode.class);
@@ -31,7 +32,7 @@ public final class DataNode {
     this.ctxs = new ConcurrentHashMap<String, Store.Context>();
   }
 
-  public Message process(Message msg) {
+  public Message process(Message msg) throws ZabException.TooManyPendingRequests, ZabException.InvalidPhase {
     Message r = MessageBuilder.nullMsg;
     try {
       String table;
@@ -103,6 +104,7 @@ public final class DataNode {
     } catch(Exception e) {
       log.info(e);
       e.printStackTrace();
+      throw e;
     }
     return r;
   }

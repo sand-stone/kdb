@@ -36,6 +36,8 @@ public class Store implements Closeable {
   }
 
   public class Context implements Closeable {
+    private AtomicInteger counts = new AtomicInteger();
+    private final static int Count = 5000;
     Session session;
     String table;
     Cursor cursor;
@@ -44,6 +46,10 @@ public class Store implements Closeable {
 
     public Context(String table) {
       this.table = table;
+      if(counts.getAndIncrement() > 5000) {
+        counts.getAndDecrement();
+        throw new KdbException("too many sessions");
+      }
       session = Store.this.conn.open_session(null);
       cursor = session.open_cursor("table:"+table, null, null);
       if(sessions.get(table) == null) {
@@ -70,6 +76,7 @@ public class Store implements Closeable {
       cursor.close();
       session.close(null);
       sessions.get(table).getAndDecrement();
+      counts.getAndDecrement();
       done = true;
       bound = null;
     }
