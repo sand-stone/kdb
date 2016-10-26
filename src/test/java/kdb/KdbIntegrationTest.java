@@ -137,7 +137,7 @@ public class KdbIntegrationTest extends TestCase {
       keys.add(("key"+i).getBytes());
       values.add(("value-2-"+i).getBytes());
     }
-    client.sendMsg("http://localhost:8000/", MessageBuilder.buildUpdateOp(table, keys, values));
+    client.sendMsg("http://localhost:8000/", MessageBuilder.buildUpdateOp(table, keys, values, true));
     try { Thread.currentThread().sleep(1000); } catch(Exception e) {}
     Message msg = client.sendMsg("http://localhost:8000/", MessageBuilder.buildGetOp(table, GetOperation.Type.GreaterEqual, "key2".getBytes(), 5));
     //log.info("msg {}", msg);
@@ -185,7 +185,7 @@ public class KdbIntegrationTest extends TestCase {
     List<byte[]> values = new ArrayList<byte[]>();
     for (int i = 0; i < count; i++) {
       keys.add(("key"+i).getBytes());
-      values.add(("value-1-"+i).getBytes());
+      values.add(("value"+i).getBytes());
     }
     Client client = new Client();
     String table = "test7";
@@ -197,7 +197,7 @@ public class KdbIntegrationTest extends TestCase {
     values.clear();
     for (int i = 0; i < count; i++) {
       keys.add(("key"+i).getBytes());
-      values.add(("value-2-"+i).getBytes());
+      values.add(("value"+i).getBytes());
     }
     client.sendMsg("http://localhost:8000/", MessageBuilder.buildUpdateOp(table, keys, values));
     try { Thread.currentThread().sleep(1000); } catch(Exception e) {}
@@ -207,12 +207,12 @@ public class KdbIntegrationTest extends TestCase {
 
     for (int i = 0; i < count/2; i++) {
       keys.add(("key"+i).getBytes());
-      values.add(("value-2-"+i).getBytes());
+      values.add(("value"+i).getBytes());
     }
     client.sendMsg("http://localhost:8000/", MessageBuilder.buildUpdateOp(table, keys, values));
     try { Thread.currentThread().sleep(1000); } catch(Exception e) {}
 
-    Message msg = client.sendMsg("http://localhost:8000/", MessageBuilder.buildGetOp(table, "key0".getBytes(), "key9".getBytes(),10, 2));
+    Message msg = client.sendMsg("http://localhost:8000/", MessageBuilder.buildGetOp(table, "key0".getBytes(), "key9".getBytes(), 10, 2));
     //log.info("msg {}", msg);
     if(msg.getResponse().getValuesCount() == 5) {
       assertTrue(true);

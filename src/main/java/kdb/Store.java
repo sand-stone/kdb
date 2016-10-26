@@ -151,12 +151,15 @@ public class Store implements Closeable {
         if(ctx.cursor.search() == 0) {
           byte[] oldv =  ctx.cursor.getValueByteArray();
           oldv[0]++;
-          byte[] newv = op.getValues(i).toByteArray();
-          ctx.cursor.putValueByteArray(ByteBuffer.allocate(oldv.length+newv.length).put(oldv).put(newv).array());
+          byte[] newv = ByteBuffer.allocate(oldv.length+op.getValues(i).size())
+            .put(oldv)
+            .put(op.getValues(i).toByteArray())
+            .array();
+          ctx.cursor.putValueByteArray(newv);
         } else {
           byte[] v = op.getValues(i).toByteArray();
           ByteBuffer buf = ByteBuffer.allocate(v.length+1);
-          buf.put((byte)0).put(v);
+          buf.put((byte)1).put(v);
           ctx.cursor.putValueByteArray(buf.array());
         }
         ctx.cursor.putKeyByteArray(op.getKeys(i).toByteArray());
