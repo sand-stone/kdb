@@ -53,6 +53,7 @@ message GetOperation {
   int32 limit = 4;
   bytes key = 5;
   bytes key2 = 6;
+  int32 updates = 7;
 }
 
 message InsertOperation {
@@ -63,8 +64,9 @@ message InsertOperation {
 
 message UpdateOperation {
   string table = 1;
-  repeated bytes keys = 2;
-  repeated bytes values = 3;
+  bool overwrite = 2;
+  repeated bytes keys = 3;
+  repeated bytes values = 4;
 }
 
 message DeleteOperation {

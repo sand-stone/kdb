@@ -36,7 +36,7 @@ public class XEvent {
   }
 
   public static void readEvents(Client client) {
-    Message msg = client.sendMsg("http://localhost:8001/", MessageBuilder.buildGetOp(table, GetOperation.Type.Equal, "key2".getBytes()));
+    Message msg = client.sendMsg("http://localhost:8001/", MessageBuilder.buildGetOp(table, "key2".getBytes(), "key8".getBytes(), 10));
     System.out.println(msg);
   }
 

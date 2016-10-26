@@ -57,7 +57,10 @@ public final class DataNode {
         //log.info("token <{}> ", token);
         if(token.equals("")) {
           table = msg.getGetOp().getTable();
-          ctx = store.getContext(table);
+          if(table != null && table.length() > 0)
+            ctx = store.getContext(table);
+          else
+            break;
         } else {
           ctx = ctxs.get(token);
           if(ctx == null)
@@ -99,6 +102,7 @@ public final class DataNode {
       }
     } catch(Exception e) {
       log.info(e);
+      e.printStackTrace();
     }
     return r;
   }
