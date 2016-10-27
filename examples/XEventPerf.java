@@ -69,18 +69,17 @@ public class XEventPerf {
     public void run() {
       List<byte[]> keys = new ArrayList<byte[]>();
       List<byte[]> values = new ArrayList<byte[]>();
-      Client client = new Client();
-      while(!stop) {
-        genData(keys, values);
-        client.sendMsg(uris[0],
-          MessageBuilder.buildUpdateOp(table,
-          keys,
-          values));
-        keys.clear();
-        values.clear();
-        //try {Thread.currentThread().sleep(100);} catch(Exception ex) {}
+      try(Client client = new Client(uris[0])) {
+        while(!stop) {
+          genData(keys, values);
+          client.sendMsg(MessageBuilder.buildUpdateOp(table,
+                                                      keys,
+                                                      values));
+          keys.clear();
+          values.clear();
+          //try {Thread.currentThread().sleep(100);} catch(Exception ex) {}
+        }
       }
-      client.close();
       System.out.printf("writer %d exit \n", id);
     }
   }
@@ -93,18 +92,19 @@ public class XEventPerf {
     }
 
     public void run() {
-      Client client = new Client();
-      while(!stop) {
-        Message msg = client.sendMsg("http://localhost:8001/",
-                                     MessageBuilder.buildGetOp(table,
-                                                               "key2".getBytes(),
-                                                               "key8".getBytes(),
-                                                               10));
-        System.out.printf("reader %d exit \n", id);
+      try (Client client = new Client(uris[1])) {
+        while(!stop) {
+          Message msg = client.sendMsg(MessageBuilder.buildGetOp(table,
+                                                                 "key2".getBytes(),
+                                                                 "key8".getBytes(),
+                                                                 10));
+        }
       }
-
+      System.out.printf("reader %d exit \n", id);
     }
+
   }
+
 
   public static class Scanner implements Runnable  {
     public Scanner() {
@@ -121,20 +121,17 @@ public class XEventPerf {
     }
 
     public void run() {
-      while(!stop) {
+      try (Client client = new Client(uris[1]) ) {
         while(!stop) {
-          try (Client client = new Client() ) {
-            ByteBuffer key = ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN);
-            bucketid(key, 0,0);
-            Message msg = client.sendMsg(uris[1],
-                                         MessageBuilder.buildGetOp(table,
-                                                                   GetOperation.Type.GreaterEqual,
-                                                                   key.array(),
-                                                                   10));
-            System.out.println("msg:"+msg);
-            msg = client.sendMsg(uris[1], MessageBuilder.buildGetOp(msg.getResponse().getToken(), GetOperation.Type.Done, 0));
+          ByteBuffer key = ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN);
+          bucketid(key, 0,0);
+          Message msg = client.sendMsg(MessageBuilder.buildGetOp(table,
+                                                                 GetOperation.Type.GreaterEqual,
+                                                                 key.array(),
+                                                                 10));
+          System.out.println("msg:"+msg);
+          msg = client.sendMsg(MessageBuilder.buildGetOp(msg.getResponse().getToken(), GetOperation.Type.Done, 0));
 
-          }
         }
       }
     }
@@ -152,8 +149,8 @@ public class XEventPerf {
     System.out.println("start");
     System.out.println("create table");
 
-    try (Client client = new Client()) {
-      client.sendMsg(uris[0], MessageBuilder.buildCreateOp(table));
+    try (Client client = new Client(uris[0])) {
+      client.sendMsg(MessageBuilder.buildCreateOp(table));
     }
     try { Thread.currentThread().sleep(100); } catch(Exception e) {}
 
@@ -175,8 +172,8 @@ public class XEventPerf {
     try {Thread.currentThread().sleep(3000);} catch(Exception ex) {}
 
     /*
-      try (Client = new Client()) {
-      client.sendMsg("http://localhost:8000/", MessageBuilder.buildDropOp(table));
+      try (Client = new Client(uris[0])) {
+      client.sendMsg(MessageBuilder.buildDropOp(table));
       }*/
     System.exit(0);
   }
