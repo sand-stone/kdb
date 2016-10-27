@@ -180,49 +180,53 @@ public class KdbIntegrationTest extends TestCase {
   }
 
   public void test7() {
-    int count = 10;
-    List<byte[]> keys = new ArrayList<byte[]>();
-    List<byte[]> values = new ArrayList<byte[]>();
-    for (int i = 0; i < count; i++) {
-      keys.add(("key"+i).getBytes());
-      values.add(("value"+i).getBytes());
-    }
-    Client client = new Client();
-    String table = "test7";
-    client.sendMsg("http://localhost:8000/", MessageBuilder.buildCreateOp(table));
-    try { Thread.currentThread().sleep(500); } catch(Exception e) {}
-    client.sendMsg("http://localhost:8000/", MessageBuilder.buildUpdateOp(table, keys, values));
-    try { Thread.currentThread().sleep(1000); } catch(Exception e) {}
-    keys.clear();
-    values.clear();
-    for (int i = 0; i < count; i++) {
-      keys.add(("key"+i).getBytes());
-      values.add(("value"+i).getBytes());
-    }
-    client.sendMsg("http://localhost:8000/", MessageBuilder.buildUpdateOp(table, keys, values));
-    try { Thread.currentThread().sleep(1000); } catch(Exception e) {}
+    int c = 2;
 
-    keys.clear();
-    values.clear();
+    while(c-->0) {
+      int count = 10;
+      List<byte[]> keys = new ArrayList<byte[]>();
+      List<byte[]> values = new ArrayList<byte[]>();
+      for (int i = 0; i < count; i++) {
+        keys.add(("key"+i).getBytes());
+        values.add(("value"+i).getBytes());
+      }
+      Client client = new Client();
+      String table = "test7";
+      client.sendMsg("http://localhost:8000/", MessageBuilder.buildCreateOp(table));
+      try { Thread.currentThread().sleep(500); } catch(Exception e) {}
+      client.sendMsg("http://localhost:8000/", MessageBuilder.buildUpdateOp(table, keys, values));
+      try { Thread.currentThread().sleep(1000); } catch(Exception e) {}
+      keys.clear();
+      values.clear();
+      for (int i = 0; i < count; i++) {
+        keys.add(("key"+i).getBytes());
+        values.add(("value"+i).getBytes());
+      }
+      client.sendMsg("http://localhost:8000/", MessageBuilder.buildUpdateOp(table, keys, values));
+      try { Thread.currentThread().sleep(1000); } catch(Exception e) {}
 
-    for (int i = 0; i < count/2; i++) {
-      keys.add(("key"+i).getBytes());
-      values.add(("value"+i).getBytes());
-    }
-    client.sendMsg("http://localhost:8000/", MessageBuilder.buildUpdateOp(table, keys, values));
-    try { Thread.currentThread().sleep(1000); } catch(Exception e) {}
+      keys.clear();
+      values.clear();
 
-    Message msg = client.sendMsg("http://localhost:8000/", MessageBuilder.buildGetOp(table, "key0".getBytes(), "key9".getBytes(), 10, 2));
-    //log.info("msg {}", msg);
-    if(msg.getResponse().getValuesCount() == 5) {
-      assertTrue(true);
-    } else {
-      assertTrue(false);
+      for (int i = 0; i < count/2; i++) {
+        keys.add(("key"+i).getBytes());
+        values.add(("value"+i).getBytes());
+      }
+      client.sendMsg("http://localhost:8000/", MessageBuilder.buildUpdateOp(table, keys, values));
+      try { Thread.currentThread().sleep(1000); } catch(Exception e) {}
+
+      Message msg = client.sendMsg("http://localhost:8000/", MessageBuilder.buildGetOp(table, "key0".getBytes(), "key999".getBytes(), 10, 2));
+      log.info("msg {}", msg);
+      if(msg.getResponse().getValuesCount() == 5) {
+        assertTrue(true);
+      } else {
+        assertTrue(false);
+      }
+      msg = client.sendMsg("http://localhost:8000/", MessageBuilder.buildGetOp(msg.getResponse().getToken(), GetOperation.Type.Done, 0));
+      try { Thread.currentThread().sleep(100); } catch(Exception e) {}
+      client.sendMsg("http://localhost:8000/", MessageBuilder.buildDropOp(table));
+      //log.info("drop table");
     }
-    msg = client.sendMsg("http://localhost:8000/", MessageBuilder.buildGetOp(msg.getResponse().getToken(), GetOperation.Type.Done, 0));
-    try { Thread.currentThread().sleep(100); } catch(Exception e) {}
-    client.sendMsg("http://localhost:8000/", MessageBuilder.buildDropOp(table));
-    //log.info("drop table");
   }
 
 }
