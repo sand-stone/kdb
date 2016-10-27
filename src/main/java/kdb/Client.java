@@ -22,17 +22,19 @@ public final class Client implements Closeable {
   private static Logger log = LogManager.getLogger(Client.class);
   final AsyncHttpClientConfig config;
   AsyncHttpClient client;
+  private String uri;
 
-  public Client() {
+  public Client(String uri) {
     config = new DefaultAsyncHttpClientConfig.Builder().setRequestTimeout(Integer.MAX_VALUE).build();
     client = new DefaultAsyncHttpClient(config);
+    this.uri = uri;
   }
 
-  public Message sendMsg(String url, Message msg) {
+  public Message sendMsg(Message msg) {
     Message rsp = MessageBuilder.nullMsg;
     try {
       Response r;
-      r=client.preparePost(url)
+      r=client.preparePost(uri)
         .setBody(msg.toByteArray())
         .execute()
         .get();
@@ -49,11 +51,11 @@ public final class Client implements Closeable {
     return rsp;
   }
 
-  public Message sendMsg(String url, String msg) {
+  public Message sendMsg(String msg) {
     Message rsp = MessageBuilder.nullMsg;
     try {
       Response r;
-      r=client.prepareGet(url)
+      r=client.prepareGet(uri)
         .setBody(msg.getBytes())
         .execute()
         .get();
