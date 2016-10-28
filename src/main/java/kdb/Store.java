@@ -225,7 +225,7 @@ public class Store implements Closeable {
         if(Utils.memcmp(key, ctx.bound) > 0)
           break;
         value = ctx.cursor.getValueByteArray();
-        if(value[0] == u) {
+        if(value[0] >= u) {
           keys.add(key);
           values.add(value);
         }
@@ -304,7 +304,7 @@ public class Store implements Closeable {
               if(Utils.memcmp(key, k2) > 0)
                 break;
               value = ctx.cursor.getValueByteArray();
-              if(value[0] == u) {
+              if(value[0] >= u) {
                 keys.add(key);
                 values.add(value);
               }

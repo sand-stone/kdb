@@ -56,6 +56,7 @@ public class KdbIntegrationTest extends TestCase {
     List<byte[]> values = Arrays.asList("val1".getBytes(), "testvalue".getBytes());
     String table = "test2";
     Client.createTable("http://localhost:8000/", table);
+    try { Thread.currentThread().sleep(500); } catch(Exception e) {}
     try (Client client = new Client("http://localhost:8000/", table)) {
       client.insert(keys, values);
       try { Thread.currentThread().sleep(500); } catch(Exception e) {}
@@ -65,7 +66,6 @@ public class KdbIntegrationTest extends TestCase {
         assertTrue(true);
       } else
         assertTrue(false);
-      client.sendMsg(MessageBuilder.buildDropOp(table));
     }
     Client.dropTable("http://localhost:8000/", table);
   }
@@ -198,7 +198,7 @@ public class KdbIntegrationTest extends TestCase {
         client.append(keys, values);
         try { Thread.currentThread().sleep(100); } catch(Exception e) {}
 
-        Client.Result rsp = client.get("key0".getBytes(), "key999".getBytes(), 10, 2);
+        Client.Result rsp = client.get("key0".getBytes(), "key999".getBytes(), 10, 3);
         //log.info("msg {} ==> {} ", rsp, rsp.count());
         if(rsp.count() == 5) {
           assertTrue(true);
