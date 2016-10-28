@@ -10,13 +10,13 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.commons.configuration2.*;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
-import kdb.jzab.PendingRequests;
-import kdb.jzab.PendingRequests.Tuple;
-import kdb.jzab.StateMachine;
-import kdb.jzab.Zab;
-import kdb.jzab.ZabConfig;
-import kdb.jzab.ZabException;
-import kdb.jzab.Zxid;
+import kdb.rsm.PendingRequests;
+import kdb.rsm.PendingRequests.Tuple;
+import kdb.rsm.StateMachine;
+import kdb.rsm.Zab;
+import kdb.rsm.ZabConfig;
+import kdb.rsm.ZabException;
+import kdb.rsm.Zxid;
 
 class Ring implements Runnable, StateMachine {
   private static Logger log = LogManager.getLogger(Ring.class);

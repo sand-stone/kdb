@@ -39,7 +39,7 @@ import org.apache.commons.configuration2.*;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
 import kdb.proto.XMessage.Message;
 import com.google.protobuf.InvalidProtocolBufferException;
-import kdb.jzab.ZabException;
+import kdb.rsm.ZabException;
 
 public class HttpTransport {
   private static Logger log = LogManager.getLogger(HttpTransport.class);

@@ -12,7 +12,7 @@ import kdb.proto.XMessage.Message;
 import kdb.proto.XMessage.InsertOperation;
 import kdb.proto.XMessage.UpdateOperation;
 import kdb.proto.XMessage.GetOperation;
-import kdb.jzab.ZabException;
+import kdb.rsm.ZabException;
 
 public final class DataNode {
   private static Logger log = LogManager.getLogger(DataNode.class);
