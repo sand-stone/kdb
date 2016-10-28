@@ -116,6 +116,15 @@ final class MessageBuilder {
     return buildUpdateOp(table, keys, values, false);
   }
 
+  public static Message buildUpdateOp(String table, List<byte[]> keys) {
+    UpdateOperation op = UpdateOperation
+      .newBuilder()
+      .setTable(table)
+      .addAllKeys(keys.stream().map(k -> ByteString.copyFrom(k)).collect(toList()))
+      .build();
+    return Message.newBuilder().setType(MessageType.Update).setUpdateOp(op).build();
+  }
+
   public static Message buildUpdateOp(String table, List<byte[]> keys, List<byte[]> values, boolean overwrite) {
     UpdateOperation op = UpdateOperation
       .newBuilder()

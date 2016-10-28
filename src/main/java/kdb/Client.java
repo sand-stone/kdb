@@ -129,7 +129,8 @@ public final class Client implements Closeable {
   }
 
   public Result increment(List<byte[]> keys) {
-    return null;
+    Message msg = sendMsg(MessageBuilder.buildUpdateOp(table, keys));
+    return new Result(msg.getResponse());
   }
 
   public Result get(QueryType type, byte[] key, int limit) {

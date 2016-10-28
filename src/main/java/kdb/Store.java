@@ -143,8 +143,31 @@ public class Store implements Closeable {
     UpdateOperation op = msg.getUpdateOp();
     ctx.cursor.reset();
     int len = op.getKeysCount();
-    if(len != op.getValuesCount())
-      throw new RuntimeException("wrong length");
+    if(len != op.getValuesCount()) {
+      if(op.getValuesCount() != 0) {
+        throw new KdbException("wrong length");
+      }
+      ByteBuffer counter = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN);
+      for(int i = 0; i < len; i++) {
+        ctx.cursor.putKeyByteArray(op.getKeys(i).toByteArray());
+        if(ctx.cursor.search() == 0) {
+          ctx.cursor.getValueByteArray(counter.array(), 0, 4);
+          int c = counter.getInt()+1;
+          counter.clear();
+          counter.putInt(c);
+          ctx.cursor.putValueByteArray(counter.array());
+        } else {
+          counter.putInt(1);
+          ctx.cursor.putValueByteArray(counter.array());
+        }
+        ctx.cursor.putKeyByteArray(op.getKeys(i).toByteArray());
+        ctx.cursor.update();
+        ctx.cursor.reset();
+        counter.clear();
+      }
+      return;
+    }
+
     if(msg.getUpdateOp().getOverwrite()) {
       for(int i = 0; i < len; i++) {
         ctx.cursor.putKeyByteArray(op.getKeys(i).toByteArray());
@@ -156,7 +179,7 @@ public class Store implements Closeable {
       for(int i = 0; i < len; i++) {
         ctx.cursor.putKeyByteArray(op.getKeys(i).toByteArray());
         if(ctx.cursor.search() == 0) {
-          byte[] oldv =  ctx.cursor.getValueByteArray();
+          byte[] oldv = ctx.cursor.getValueByteArray();
           oldv[0]++;
           byte[] newv = ByteBuffer.allocate(oldv.length+op.getValues(i).size())
             .put(oldv)

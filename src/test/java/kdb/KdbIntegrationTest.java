@@ -9,6 +9,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.*;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.commons.configuration2.*;
@@ -208,6 +209,27 @@ public class KdbIntegrationTest extends TestCase {
       }
       Client.dropTable("http://localhost:8001/", table);
     }
+  }
+
+  public void test8() {
+    int count = 10;
+    List<byte[]> keys = new ArrayList<byte[]>();
+    for (int i = 0; i < count; i++) {
+      keys.add(("key"+i).getBytes());
+    }
+
+    String table = "test8";
+    Client.createTable("http://localhost:8000/", table);
+    try (Client client = new Client("http://localhost:8000/", table)) {
+      client.increment(keys);
+      try { Thread.currentThread().sleep(500); } catch(Exception e) {}
+      client.increment(keys);
+      try { Thread.currentThread().sleep(500); } catch(Exception e) {}
+      Client.Result rsp = client.get("key0".getBytes(), "key999".getBytes(), 50);
+      rsp.values().stream().forEach(v -> assertTrue(ByteBuffer.wrap(v).order(ByteOrder.BIG_ENDIAN).getInt() == 2));
+      //log.info("msg {}", rsp);
+    }
+    Client.dropTable("http://localhost:8000/", table);
   }
 
 }
