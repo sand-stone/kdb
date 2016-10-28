@@ -165,24 +165,21 @@ public class KdbIntegrationTest extends TestCase {
       keys.add(("key"+i).getBytes());
       values.add(("value-1-"+i).getBytes());
     }
-    try (Client client = new Client("http://localhost:8000/")) {
-      String table = "test6";
-      client.sendMsg(MessageBuilder.buildCreateOp(table));
-      try { Thread.currentThread().sleep(500); } catch(Exception e) {}
-      client.sendMsg(MessageBuilder.buildInsertOp(table, keys, values));
+    String table = "test6";
+    Client.createTable("http://localhost:8000/", table);
+    try (Client client = new Client("http://localhost:8000/", table)) {
+      client.insert(keys, values);
       try { Thread.currentThread().sleep(1000); } catch(Exception e) {}
-      Message msg = client.sendMsg(MessageBuilder.buildGetOp(table, "key3".getBytes(), "key6".getBytes(),5));
-      //log.info("msg {}", msg);
-      if(msg.getResponse().getValuesCount() == 4) {
+      Client.Result rsp = client.get("key3".getBytes(), "key6".getBytes(),5);
+      //log.info("msg {}", rsp);
+      if(rsp.count() == 4) {
         assertTrue(true);
       } else {
         assertTrue(false);
       }
-      msg = client.sendMsg(MessageBuilder.buildGetOp(msg.getResponse().getToken(), GetOperation.Type.Done, 0));
-      try { Thread.currentThread().sleep(100); } catch(Exception e) {}
-      client.sendMsg(MessageBuilder.buildDropOp(table));
-      //log.info("drop table");
     }
+    Client.dropTable("http://localhost:8000/", table);
+    //log.info("drop table");
   }
 
   public void test7() {
