@@ -4,6 +4,8 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.*;
+import java.util.stream.Collectors;
+import static java.util.stream.Collectors.toList;
 import java.nio.ByteBuffer;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
@@ -61,19 +63,23 @@ public final class Client implements Closeable {
     }
 
     public List<byte[]> keys() {
-      return null;
+      return rsp.getKeysList().stream().map(k -> k.toByteArray()).collect(toList());
     }
 
     public List<byte[]> values() {
-      return null;
+      return rsp.getValuesList().stream().map(v -> v.toByteArray()).collect(toList());
     }
 
     public byte[] getKey(int index) {
-      return null;
+      return rsp.getKeys(index).toByteArray();
     }
 
     public byte[] getValue(int index) {
-      return null;
+      return rsp.getValues(index).toByteArray();
+    }
+
+    public String toString() {
+      return rsp.toString();
     }
   }
 
@@ -110,6 +116,20 @@ public final class Client implements Closeable {
   public Result insert(List<byte[]> keys, List<byte[]> values) {
     Message msg = sendMsg(MessageBuilder.buildInsertOp(table, keys, values));
     return new Result(msg.getResponse());
+  }
+
+  public Result replace(List<byte[]> keys, List<byte[]> values) {
+    Message msg = sendMsg(MessageBuilder.buildUpdateOp(table, keys, values, true));
+    return new Result(msg.getResponse());
+  }
+
+  public Result append(List<byte[]> keys, List<byte[]> values) {
+    Message msg = sendMsg(MessageBuilder.buildUpdateOp(table, keys, values, false));
+    return new Result(msg.getResponse());
+  }
+
+  public Result increment(List<byte[]> keys) {
+    return null;
   }
 
   public Result get(QueryType type, byte[] key, int limit) {

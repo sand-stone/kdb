@@ -16,7 +16,7 @@ import kdb.proto.XMessage.CreateOperation;
 import kdb.proto.XMessage.DropOperation;
 import kdb.proto.XMessage.Response;
 
-public final class MessageBuilder {
+final class MessageBuilder {
   final static Message nullMsg = MessageBuilder.buildErrorResponse("null");
   final static Message emptyMsg = MessageBuilder.buildResponse("null");
   final static Message busyMsg = MessageBuilder.buildRetryResponse("server side busy");
