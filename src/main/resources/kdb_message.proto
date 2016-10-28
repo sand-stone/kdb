@@ -31,6 +31,7 @@ message Response {
   enum Type {
      OK = 0;
      Error = 1;
+     Retry = 2;
    }
   Type type = 1;
   string reason = 2;

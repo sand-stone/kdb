@@ -102,8 +102,8 @@ public final class DataNode {
         break;
       }
     } catch(Exception e) {
-      log.info(e);
-      e.printStackTrace();
+      //log.info(e);
+      //e.printStackTrace();
       throw e;
     }
     return r;

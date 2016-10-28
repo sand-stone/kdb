@@ -128,16 +128,16 @@ public class HttpTransport {
             msg = Message.parseFrom(bytes);
             msg = datanode.process(msg);
           } catch(InvalidProtocolBufferException e) {
-            log.info(e);
-            msg = MessageBuilder.nullMsg;
+            //log.info(e);
+            msg = MessageBuilder.buildErrorResponse("InvalidProtocolBufferException");
           } catch(ZabException.TooManyPendingRequests e) {
-            log.info(e);
-            msg = MessageBuilder.nullMsg;
+            //log.info(e);
+            msg = MessageBuilder.busyMsg;
           } catch(ZabException.InvalidPhase e) {
-            log.info(e);
-            msg = MessageBuilder.nullMsg;
+            //log.info(e);
+            msg = MessageBuilder.buildErrorResponse("InvalidPhase");
           } catch(KdbException e) {
-            log.info(e);
+            //log.info(e);
             msg = MessageBuilder.buildErrorResponse(e.getMessage());
           } finally {
             if(buf != null)

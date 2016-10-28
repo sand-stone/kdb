@@ -5,6 +5,7 @@ import kdb.proto.XMessage.InsertOperation;
 import kdb.proto.XMessage.UpdateOperation;
 import kdb.proto.XMessage.GetOperation;
 import kdb.proto.XMessage.DropOperation;
+import kdb.proto.XMessage.Response;
 
 import java.io.*;
 import java.util.*;
@@ -59,7 +60,7 @@ public class XEventPerf {
     }
 
     private void genData(List<byte[]> keys, List<byte[]> values) {
-      int batch = 10;
+      int batch = 100;
       for (int i = 0; i < batch; i++) {
         ByteBuffer key = ByteBuffer.allocate(22).order(ByteOrder.BIG_ENDIAN);
         bucketid(key); queryid(key); deviceid(key);
@@ -77,8 +78,15 @@ public class XEventPerf {
           Message msg = MessageBuilder.buildUpdateOp(table,
                                                      keys,
                                                      values);
+          do {
+            msg = client.sendMsg(msg);
+            if(msg.getResponse().getType() == Response.Type.Retry) {
+              System.out.printf("rsp: %s", msg.toString());
+            } else
+              break;
+          } while (true);
           //System.out.printf("gen msg %s \n", msg.toString());
-          client.sendMsg(msg);
+
           keys.clear();
           values.clear();
           //try {Thread.currentThread().sleep(100);} catch(Exception ex) {}
@@ -140,7 +148,11 @@ public class XEventPerf {
   }
 
   public static class Counter implements Runnable  {
-    public Counter() {}
+    String uri;
+
+    public Counter(String uri) {
+      this.uri = uri;
+    }
 
     private void bucketid(ByteBuffer buf, int hour, int minute) {
       buf.put((byte)hour);
@@ -148,7 +160,7 @@ public class XEventPerf {
     }
 
     public void run() {
-      try (Client client = new Client(uris[2]) ) {
+      try (Client client = new Client(uri)) {
         ByteBuffer key = ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN);
         bucketid(key, 0, 0);
         Message msg = client.sendMsg(MessageBuilder.buildGetOp(table,
@@ -207,8 +219,9 @@ public class XEventPerf {
 
     try {Thread.currentThread().sleep(2000);} catch(Exception ex) {}
     System.out.println("start counter threads");
-    new Thread(new Counter()).start();
-    new Thread(new Counter()).start();
+    new Thread(new Counter(uris[1])).start();
+    new Thread(new Counter(uris[2])).start();
+    new Thread(new Counter(uris[0])).start();
     try {Thread.currentThread().sleep(3000);} catch(Exception ex) {}
     /*
       try (Client = new Client(uris[0])) {

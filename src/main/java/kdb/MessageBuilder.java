@@ -19,6 +19,7 @@ import kdb.proto.XMessage.Response;
 public final class MessageBuilder {
   final static Message nullMsg = MessageBuilder.buildErrorResponse("null");
   final static Message emptyMsg = MessageBuilder.buildResponse("null");
+  final static Message busyMsg = MessageBuilder.buildRetryResponse("server side busy");
 
   private MessageBuilder() {}
 
@@ -27,6 +28,15 @@ public final class MessageBuilder {
       .newBuilder()
       .setType(Response.Type.Error)
       .setReason(error)
+      .build();
+    return Message.newBuilder().setType(MessageType.Response).setResponse(op).build();
+  }
+
+  public static Message buildRetryResponse(String msg) {
+    Response op = Response
+      .newBuilder()
+      .setType(Response.Type.Retry)
+      .setReason(msg)
       .build();
     return Message.newBuilder().setType(MessageType.Response).setResponse(op).build();
   }
