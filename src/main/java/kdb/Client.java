@@ -51,6 +51,12 @@ public final class Client implements Closeable {
     }
 
     public Status status() {
+      switch(rsp.getType()) {
+      case Error:
+        return Status.Error;
+      case Retry:
+        return Status.Retry;
+      }
       return Status.OK;
     }
 

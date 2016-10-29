@@ -197,7 +197,7 @@ public class KdbIntegrationTest extends TestCase {
           values.add(("value"+i).getBytes());
         }
         client.append(keys, values);
-        try { Thread.currentThread().sleep(100); } catch(Exception e) {}
+        try { Thread.currentThread().sleep(1000); } catch(Exception e) {}
 
         Client.Result rsp = client.get("key0".getBytes(), "key999".getBytes(), 10, 3);
         //log.info("msg {} ==> {} ", rsp, rsp.count());

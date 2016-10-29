@@ -1,11 +1,4 @@
 import kdb.Client;
-import kdb.MessageBuilder;
-import kdb.proto.XMessage.Message;
-import kdb.proto.XMessage.InsertOperation;
-import kdb.proto.XMessage.UpdateOperation;
-import kdb.proto.XMessage.GetOperation;
-import kdb.proto.XMessage.DropOperation;
-import kdb.proto.XMessage.Response;
 
 import java.io.*;
 import java.util.*;
@@ -72,16 +65,13 @@ public class XEventPerf {
     public void run() {
       List<byte[]> keys = new ArrayList<byte[]>();
       List<byte[]> values = new ArrayList<byte[]>();
-      try(Client client = new Client(uris[0])) {
+      try(Client client = new Client(uris[0], table)) {
         while(!stop) {
           genData(keys, values);
-          Message msg = MessageBuilder.buildUpdateOp(table,
-                                                     keys,
-                                                     values);
           do {
-            msg = client.sendMsg(msg);
-            if(msg.getResponse().getType() == Response.Type.Retry) {
-              System.out.printf("rsp: %s", msg.toString());
+            Client.Result rsp = client.append(keys, values);
+            if(rsp.status() == Client.Status.Retry) {
+              System.out.printf("rsp: %s", rsp.toString());
             } else
               break;
           } while (true);
@@ -104,17 +94,12 @@ public class XEventPerf {
     }
 
     public void run() {
-      try (Client client = new Client(uris[1])) {
+      try (Client client = new Client(uris[1], table)) {
         while(!stop) {
-          Message msg = client.sendMsg(MessageBuilder.buildGetOp(table,
-                                                                 "key2".getBytes(),
-                                                                 "key8".getBytes(),
-                                                                 10));
         }
       }
       System.out.printf("reader %d exit \n", id);
     }
-
   }
 
 
@@ -133,16 +118,12 @@ public class XEventPerf {
     }
 
     public void run() {
-      try (Client client = new Client(uris[2]) ) {
         while(!stop) {
-          ByteBuffer key = ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN);
-          bucketid(key, 0, 0);
-          Message msg = client.sendMsg(MessageBuilder.buildGetOp(table,
-                                                                 GetOperation.Type.GreaterEqual,
-                                                                 key.array(),
-                                                                 100));
-          msg = client.sendMsg(MessageBuilder.buildGetOp(msg.getResponse().getToken(), GetOperation.Type.Done, 0));
-        }
+          try (Client client = new Client(uris[2], table)) {
+            ByteBuffer key = ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN);
+            bucketid(key, 0, 0);
+            Client.Result rsp = client.get(Client.QueryType.GreaterEqual, key.array(), 100);
+          }
       }
     }
   }
@@ -160,20 +141,15 @@ public class XEventPerf {
     }
 
     public void run() {
-      try (Client client = new Client(uri)) {
+      try (Client client = new Client(uri, table)) {
         ByteBuffer key = ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN);
         bucketid(key, 0, 0);
-        Message msg = client.sendMsg(MessageBuilder.buildGetOp(table,
-                                                               GetOperation.Type.GreaterEqual,
-                                                               key.array(),
-                                                               100));
-        int count = msg.getResponse().getKeysCount();
+        Client.Result rsp = client.get(Client.QueryType.GreaterEqual, key.array(), 100);
+        int count = rsp.count();
         //System.out.println("msg:"+msg.getResponse().getKeysCount());
-        while(msg.getResponse().getToken().length()>0) {
-          msg = client.sendMsg(MessageBuilder.buildGetOp(msg.getResponse().getToken(),
-                                                         GetOperation.Type.GreaterEqual,
-                                                         100));
-          count += msg.getResponse().getKeysCount();
+        while(rsp.token().length() > 0) {
+          rsp = client.get(Client.QueryType.GreaterEqual, rsp.token(), 100);
+          count += rsp.count();
           //System.out.println("msg:"+msg.getResponse().getKeysCount());
         }
         System.out.printf("total # msg %d \n", count);
@@ -193,10 +169,7 @@ public class XEventPerf {
     System.out.println("start");
     System.out.println("create table");
 
-    try (Client client = new Client(uris[0])) {
-      client.sendMsg(MessageBuilder.buildCreateOp(table));
-    }
-    try { Thread.currentThread().sleep(100); } catch(Exception e) {}
+    Client.createTable(uris[0], table);
 
     int nw = 2;
     for (int i = 0; i < nw; i++) {
@@ -222,11 +195,10 @@ public class XEventPerf {
     new Thread(new Counter(uris[1])).start();
     new Thread(new Counter(uris[2])).start();
     new Thread(new Counter(uris[0])).start();
+
     try {Thread.currentThread().sleep(3000);} catch(Exception ex) {}
-    /*
-      try (Client = new Client(uris[0])) {
-      client.sendMsg(MessageBuilder.buildDropOp(table));
-      }*/
+
+    Client.dropTable(uris[0], table);
     System.exit(0);
   }
 }
