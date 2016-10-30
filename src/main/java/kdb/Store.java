@@ -176,20 +176,25 @@ public class Store implements Closeable {
         ctx.cursor.reset();
       }
     } else {
+      ByteBuffer counter = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN);
       for(int i = 0; i < len; i++) {
         ctx.cursor.putKeyByteArray(op.getKeys(i).toByteArray());
         if(ctx.cursor.search() == 0) {
           byte[] oldv = ctx.cursor.getValueByteArray();
-          oldv[0]++;
+          counter.put(oldv, 0, 4);
+          counter.flip();
           byte[] newv = ByteBuffer.allocate(oldv.length+op.getValues(i).size())
-            .put(oldv)
+            .order(ByteOrder.BIG_ENDIAN)
+            .putInt(counter.getInt() + 1)
+            .put(oldv, 4, oldv.length - 4)
             .put(op.getValues(i).toByteArray())
             .array();
           ctx.cursor.putValueByteArray(newv);
+          counter.clear();
         } else {
           byte[] v = op.getValues(i).toByteArray();
-          ByteBuffer buf = ByteBuffer.allocate(v.length+1);
-          buf.put((byte)1).put(v);
+          ByteBuffer buf = ByteBuffer.allocate(v.length+4).order(ByteOrder.BIG_ENDIAN);
+          buf.putInt(1).put(v);
           ctx.cursor.putValueByteArray(buf.array());
         }
         ctx.cursor.putKeyByteArray(op.getKeys(i).toByteArray());
@@ -228,11 +233,11 @@ public class Store implements Closeable {
     return MessageBuilder.buildResponse(ctx.done? "" : ctx.token(), keys, values);
   }
 
-  private Message buildrange(Context ctx, int limit, int updates) {
+  private Message buildrange(Context ctx, int limit, int count) {
     byte[] key, value;
     List<byte[]> keys = new ArrayList<byte[]>();
     List<byte[]> values = new ArrayList<byte[]>();
-    if(updates == -1) {
+    if(count == -1) {
       while(--limit>0 && ctx.cursor.next() == 0) {
         key = ctx.cursor.getKeyByteArray();
         if(Utils.memcmp(key, ctx.bound) > 0)
@@ -242,16 +247,18 @@ public class Store implements Closeable {
         values.add(value);
       }
     } else {
-      byte u = (byte)updates;
+      ByteBuffer counter = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN);
       while(--limit>0 && ctx.cursor.next() == 0) {
         key = ctx.cursor.getKeyByteArray();
         if(Utils.memcmp(key, ctx.bound) > 0)
           break;
         value = ctx.cursor.getValueByteArray();
-        if(value[0] >= u) {
+        counter.put(value, 0, 4);
+        if(counter.getInt() >= count) {
           keys.add(key);
           values.add(value);
         }
+        counter.clear();
       }
     }
     ctx.done = limit != 0? true : false;
@@ -274,7 +281,7 @@ public class Store implements Closeable {
         break;
       case Between:
         if(ctx.bound != null) {
-          r = buildrange(ctx, msg.getGetOp().getLimit(), msg.getGetOp().getUpdates());
+          r = buildrange(ctx, msg.getGetOp().getLimit(), msg.getGetOp().getCount());
         } else
           r = MessageBuilder.emptyMsg;
         break;
@@ -310,8 +317,8 @@ public class Store implements Closeable {
           List<byte[]> keys = new ArrayList<byte[]>();
           List<byte[]> values = new ArrayList<byte[]>();
           byte[] k2 = msg.getGetOp().getKey2().toByteArray();
-          int updates = msg.getGetOp().getUpdates();
-          if(updates == -1) {
+          int count = msg.getGetOp().getCount();
+          if(count == -1) {
             do {
               key = ctx.cursor.getKeyByteArray();
               if(Utils.memcmp(key, k2) > 0)
@@ -321,16 +328,19 @@ public class Store implements Closeable {
               values.add(value);
             } while(--limit>0 && ctx.cursor.next() == 0);
           } else {
-            byte u = (byte)updates;
+            ByteBuffer counter = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN);
             do {
               key = ctx.cursor.getKeyByteArray();
               if(Utils.memcmp(key, k2) > 0)
                 break;
               value = ctx.cursor.getValueByteArray();
-              if(value[0] >= u) {
+              counter.put(value, 0, 4);
+              counter.flip();
+              if(counter.getInt() >= count) {
                 keys.add(key);
                 values.add(value);
               }
+              counter.clear();
             } while(--limit>0 && ctx.cursor.next() == 0);
           }
           ctx.done = limit != 0? true : false;

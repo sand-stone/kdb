@@ -184,8 +184,8 @@ public final class Client implements Closeable {
     return get(key1, key2, limit, -1);
   }
 
-  public Result get(byte[] key1, byte[] key2, int limit, int updates) {
-    Message msg = sendMsg(MessageBuilder.buildGetOp(table, key1, key2, limit, updates));
+  public Result get(byte[] key1, byte[] key2, int limit, int count) {
+    Message msg = sendMsg(MessageBuilder.buildGetOp(table, key1, key2, limit, count));
     token = msg.getResponse().getToken();
     return new Result(msg.getResponse());
   }

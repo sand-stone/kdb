@@ -226,8 +226,42 @@ public class KdbIntegrationTest extends TestCase {
       client.increment(keys);
       try { Thread.currentThread().sleep(500); } catch(Exception e) {}
       Client.Result rsp = client.get("key0".getBytes(), "key999".getBytes(), 50);
-      rsp.values().stream().forEach(v -> assertTrue(ByteBuffer.wrap(v).order(ByteOrder.BIG_ENDIAN).getInt() == 2));
-      //log.info("msg {}", rsp);
+      //log.info("test 8 rsp {}", rsp);
+      if(rsp.count() > 0) {
+        rsp.values().stream().forEach(v -> assertTrue(ByteBuffer.wrap(v).order(ByteOrder.BIG_ENDIAN).getInt() == 2));
+      } else {
+        assertTrue(false);
+      }
+    }
+    Client.dropTable("http://localhost:8000/", table);
+  }
+
+  public void test9() {
+    int count = 10;
+    List<byte[]> keys = new ArrayList<byte[]>();
+
+    String table = "test9";
+
+    Client.createTable("http://localhost:8000/", table);
+    try (Client client = new Client("http://localhost:8000/", table)) {
+      for (int i = 0; i < count; i++) {
+      keys.add(("key"+i).getBytes());
+      }
+      client.increment(keys);
+      try { Thread.currentThread().sleep(500); } catch(Exception e) {}
+      keys.clear();
+      for (int i = 0; i < count/2; i++) {
+      keys.add(("key"+i).getBytes());
+      }
+      client.increment(keys);
+      try { Thread.currentThread().sleep(500); } catch(Exception e) {}
+      Client.Result rsp = client.get("key0".getBytes(), "key999".getBytes(), 50, 2);
+      //log.info("test9 rsp:{}", rsp);
+      if(rsp.count() > 0) {
+        rsp.values().stream().forEach(v -> assertTrue(ByteBuffer.wrap(v).order(ByteOrder.BIG_ENDIAN).getInt() == 2));
+      } else {
+        assertTrue(false);
+      }
     }
     Client.dropTable("http://localhost:8000/", table);
   }

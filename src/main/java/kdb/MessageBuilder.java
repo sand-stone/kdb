@@ -169,7 +169,7 @@ final class MessageBuilder {
     return buildGetOp(table, key, key2, limit, -1);
   }
 
-  public static Message buildGetOp(String table, byte[] key, byte[] key2, int limit, int updates) {
+  public static Message buildGetOp(String table, byte[] key, byte[] key2, int limit, int count) {
     GetOperation op = GetOperation
       .newBuilder()
       .setTable(table)
@@ -177,7 +177,7 @@ final class MessageBuilder {
       .setKey(ByteString.copyFrom(key))
       .setKey2(ByteString.copyFrom(key2))
       .setLimit(limit)
-      .setUpdates(updates)
+      .setCount(count)
       .build();
     return Message.newBuilder().setType(MessageType.Get).setGetOp(op).build();
   }

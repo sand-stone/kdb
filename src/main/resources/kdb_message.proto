@@ -29,10 +29,10 @@ message Message {
 
 message Response {
   enum Type {
-     OK = 0;
-     Error = 1;
-     Retry = 2;
-   }
+    OK = 0;
+    Error = 1;
+    Retry = 2;
+  }
   Type type = 1;
   string reason = 2;
   string token = 3;
@@ -42,19 +42,19 @@ message Response {
 
 message GetOperation {
   enum Type {
-     Equal = 0;
-     GreaterEqual = 1;
-     LessEqual = 2;
-     Between = 3;
-     Done = 4;
-   }
+    Equal = 0;
+    GreaterEqual = 1;
+    LessEqual = 2;
+    Between = 3;
+    Done = 4;
+  }
   Type op = 1;
   string table = 2;
   string token = 3;
   int32 limit = 4;
   bytes key = 5;
   bytes key2 = 6;
-  int32 updates = 7;
+  int32 count = 7;
 }
 
 message InsertOperation {
