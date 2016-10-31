@@ -106,7 +106,7 @@
                 <argument>-Djava.library.path=./libs/darwin</argument>
                 <argument>-cp</argument>
                 <argument>${basedir}/target/kdb-${project.version}.jar</argument>
-                <argument>kdb.HttpTransport</argument>
+                <argument>kdb.JettyTransport</argument>
                 <argument>${basedir}/conf/datanode1.properties</argument>
               </arguments>
             </configuration>

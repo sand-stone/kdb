@@ -13,6 +13,8 @@ import kdb.proto.XMessage.Message;
 import com.google.protobuf.InvalidProtocolBufferException;
 import kdb.rsm.ZabException;
 import java.io.File;
+import java.io.OutputStream;
+import java.io.IOException;
 
 public final class JettyTransport {
   private static final Logger log = LogManager.getLogger(JettyTransport.class);
@@ -28,9 +30,16 @@ public final class JettyTransport {
     log.info("ctx {}", ctx);
     HttpServletResponse response =
       (HttpServletResponse)(context.getResponse());
-    response.setContentType("text/html");
-    response.setStatus(HttpServletResponse.SC_OK);
-    context.complete();
+    try {
+      OutputStream os =response.getOutputStream();
+      os.write(msg.toByteArray());
+    } catch(IOException e) {
+      log.info(e);
+    } finally {
+      response.setContentType("text/html");
+      response.setStatus(HttpServletResponse.SC_OK);
+      context.complete();
+    }
   }
 
   public void start(PropertiesConfiguration config) throws Exception {

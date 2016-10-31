@@ -49,8 +49,12 @@ public final class DataNode {
         r = MessageBuilder.buildResponse("Create");
         break;
       case Drop:
-        table = msg.getDropOp().getTable();
-        store.drop(table);
+        if(standalone) {
+          table = msg.getDropOp().getTable();
+          store.drop(table);
+        } else {
+          ring.zab.send(ByteBuffer.wrap(msg.toByteArray()), context);
+        }
         r = MessageBuilder.buildResponse("Drop");
         break;
       case Get:
@@ -76,6 +80,7 @@ public final class DataNode {
           } else {
             ctxs.putIfAbsent(ctx.token(), ctx);
           }
+          JettyTransport.reply(context, r);
         }
         break;
       case Insert:
@@ -103,9 +108,10 @@ public final class DataNode {
       }
     } catch(Exception e) {
       //log.info(e);
-      //e.printStackTrace();
+      e.printStackTrace();
       throw e;
     }
+    log.info("r {}", r);
     return r;
   }
 
