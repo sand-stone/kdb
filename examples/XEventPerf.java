@@ -18,7 +18,7 @@ public class XEventPerf {
   private static UUID[] deviceIds;
 
   private static void init() {
-    deviceIds = new UUID[10];
+    deviceIds = new UUID[10000];
     for(int i = 0; i < deviceIds.length; i++) {
       deviceIds[i] = UUID.randomUUID();
     }
@@ -27,12 +27,12 @@ public class XEventPerf {
   public static class Writer implements Runnable  {
     private int id;
     private Random rnd;
-    private int numQuery;
+    private int batchSize;
 
     public Writer(int id) {
       this.id  = id;
       rnd = new Random();
-      numQuery = 5;
+      batchSize = 1000;
     }
 
     private void bucketid(ByteBuffer buf) {
@@ -43,20 +43,15 @@ public class XEventPerf {
       buf.put((byte)rnd.nextInt(12)); //every hour 12 buckets, each bucket is 5 mins
     }
 
-    private void queryid(ByteBuffer buf) {
-      buf.putInt(rnd.nextInt(numQuery));
-    }
-
     private void deviceid(ByteBuffer buf) {
       UUID guid = deviceIds[rnd.nextInt(deviceIds.length)];
       buf.putLong(guid.getMostSignificantBits()).putLong(guid.getLeastSignificantBits());
     }
 
     private void genData(List<byte[]> keys, List<byte[]> values) {
-      int batch = 100;
-      for (int i = 0; i < batch; i++) {
-        ByteBuffer key = ByteBuffer.allocate(22).order(ByteOrder.BIG_ENDIAN);
-        bucketid(key); queryid(key); deviceid(key);
+      for (int i = 0; i < batchSize; i++) {
+        ByteBuffer key = ByteBuffer.allocate(18).order(ByteOrder.BIG_ENDIAN);
+        bucketid(key); deviceid(key);
         keys.add(key.array());
         values.add(("[value#"+id+"#]").getBytes());
       }
@@ -65,24 +60,26 @@ public class XEventPerf {
     public void run() {
       List<byte[]> keys = new ArrayList<byte[]>();
       List<byte[]> values = new ArrayList<byte[]>();
+      int batch = 0;
+      int retry = 0;
       try(Client client = new Client(uris[0], table)) {
         while(!stop) {
           genData(keys, values);
           do {
             Client.Result rsp = client.append(keys, values);
             if(rsp.status() == Client.Status.Retry) {
-              System.out.printf("rsp: %s", rsp.toString());
+              retry++;
             } else
               break;
           } while (true);
           //System.out.printf("gen msg %s \n", msg.toString());
-
           keys.clear();
           values.clear();
+          batch++;
           //try {Thread.currentThread().sleep(100);} catch(Exception ex) {}
         }
       }
-      System.out.printf("writer %d exit \n", id);
+      System.out.printf("writer %d inserted %d events with retry %d \n", id, batch*batchSize, retry);
     }
   }
 
@@ -111,10 +108,6 @@ public class XEventPerf {
     private void bucketid(ByteBuffer buf, int hour, int minute) {
       buf.put((byte)hour);
       buf.put((byte)minute);
-    }
-
-    private void queryid(ByteBuffer buf, int id) {
-      buf.putInt(id);
     }
 
     public void run() {
@@ -190,15 +183,21 @@ public class XEventPerf {
     try {Thread.currentThread().sleep(10000);} catch(Exception ex) {}
     stop = true;
 
-    try {Thread.currentThread().sleep(20000);} catch(Exception ex) {}
+    try {Thread.currentThread().sleep(15000);} catch(Exception ex) {}
+    System.out.println("start counter threads");
+    new Thread(new Counter(uris[1])).start();
+    new Thread(new Counter(uris[2])).start();
+    new Thread(new Counter(uris[0])).start();
+
+    try {Thread.currentThread().sleep(70000);} catch(Exception ex) {}
+
     System.out.println("start counter threads");
     new Thread(new Counter(uris[1])).start();
     new Thread(new Counter(uris[2])).start();
     new Thread(new Counter(uris[0])).start();
 
     try {Thread.currentThread().sleep(15000);} catch(Exception ex) {}
-
-    Client.dropTable(uris[0], table);
+    //Client.dropTable(uris[0], table);
     System.exit(0);
   }
 }

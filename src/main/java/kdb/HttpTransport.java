@@ -107,6 +107,18 @@ public class HttpTransport {
       ctx.flush();
     }
 
+    public static void reply(Object ctx, Message msg) {
+      log.info("ctx {}", ctx);
+      ChannelHandlerContext context = (ChannelHandlerContext)ctx;
+      FullHttpResponse response;
+      response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.wrappedBuffer(msg.toByteArray()));
+      response.headers().set(CONTENT_TYPE, "application/octet-stream");
+      response.headers().setInt(CONTENT_LENGTH, response.content().readableBytes());
+      response.headers().set(CONNECTION, KEEP_ALIVE);
+      context.write(response).addListener(ChannelFutureListener.CLOSE);;
+      log.info("****");
+    }
+
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object data) {
       if (data instanceof HttpRequest) {
@@ -126,7 +138,8 @@ public class HttpTransport {
             byte[] bytes = new byte[buf.readableBytes()];
             buf.readBytes(bytes);
             msg = Message.parseFrom(bytes);
-            msg = datanode.process(msg);
+            datanode.process(msg, ctx);
+            return;
           } catch(InvalidProtocolBufferException e) {
             //log.info(e);
             msg = MessageBuilder.buildErrorResponse("InvalidProtocolBufferException");

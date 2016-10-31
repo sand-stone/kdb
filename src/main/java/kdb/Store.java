@@ -86,21 +86,23 @@ public class Store implements Closeable {
     return new Context(table);
   }
 
-  public void create(String table) {
+  public Message create(String table) {
     if(sessions.get(table) != null) {
       //throw new KdbException("table existed");
       //log.info("{} table already existed", table);
-      return;
+      return MessageBuilder.buildResponse("table already existed:" + table);
     }
+
     Session session = conn.open_session(null);
     int r = session.create("table:"+table, "(type=lsm,key_format=u,value_format=u)");
     if(r == 0)
       session.close(null);
     else
       throw new KdbException("errro code:"+ r);
+    return MessageBuilder.buildResponse("create " + table);
   }
 
-  public void drop(String table) {
+  public Message drop(String table) {
     if(sessions.get(table) == null) {
       sessions.putIfAbsent(table, new AtomicInteger(-1));
     }
@@ -122,9 +124,10 @@ public class Store implements Closeable {
     }
     session.close(null);
     sessions.remove(table);
+    return MessageBuilder.buildResponse("drop " + table);
   }
 
-  public void insert(Context ctx, Message msg) {
+  public Message insert(Context ctx, Message msg) {
     assert msg.getType() == MessageType.Insert;
     InsertOperation op = msg.getInsertOp();
     ctx.cursor.reset();
@@ -136,9 +139,10 @@ public class Store implements Closeable {
       ctx.cursor.putValueByteArray(op.getValues(i).toByteArray());
       ctx.cursor.insert();
     }
+    return MessageBuilder.buildResponse("inserted");
   }
 
-  public void update(Context ctx, Message msg) {
+  public Message update(Context ctx, Message msg) {
     assert msg.getType() == MessageType.Update;
     UpdateOperation op = msg.getUpdateOp();
     ctx.cursor.reset();
@@ -165,7 +169,7 @@ public class Store implements Closeable {
         ctx.cursor.reset();
         counter.clear();
       }
-      return;
+      return MessageBuilder.buildResponse("updated");
     }
 
     if(msg.getUpdateOp().getOverwrite()) {
@@ -202,6 +206,7 @@ public class Store implements Closeable {
         ctx.cursor.reset();
       }
     }
+    return MessageBuilder.buildResponse("updated");
   }
 
   private Message buildfwd(Context ctx, int limit) {
@@ -395,24 +400,25 @@ public class Store implements Closeable {
     return r;
   }
 
-  public void handle(ByteBuffer data) throws IOException {
+  public Message handle(ByteBuffer data) throws IOException {
     byte[] arr = new byte[data.remaining()];
     data.get(arr);
     Message msg = Message.parseFrom(arr);
     if(msg.getType() == MessageType.Insert) {
       String table = msg.getInsertOp().getTable();
       try(Store.Context ctx = getContext(table)) {
-        insert(ctx, msg);
+        msg = insert(ctx, msg);
       }
     } else if (msg.getType() == MessageType.Update) {
       String table = msg.getUpdateOp().getTable();
       try(Store.Context ctx = getContext(table)) {
-        update(ctx, msg);
+        msg = update(ctx, msg);
       }
     } else if(msg.getType() == MessageType.Create) {
       String table = msg.getCreateOp().getTable();
-      create(table);
+      msg = create(table);
     }
+    return msg;
   }
 
   public void close() {

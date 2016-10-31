@@ -32,19 +32,19 @@ public final class DataNode {
     this.ctxs = new ConcurrentHashMap<String, Store.Context>();
   }
 
-  public Message process(Message msg) throws ZabException.TooManyPendingRequests, ZabException.InvalidPhase {
+  public Message process(Message msg, Object context) throws ZabException.TooManyPendingRequests, ZabException.InvalidPhase {
     Message r = MessageBuilder.nullMsg;
     try {
       String table;
       Store.Context ctx;
-      //log.info("msg {}", msg);
+      log.info("msg {} context {}", msg, context);
       switch(msg.getType()) {
       case Create:
         if(standalone) {
           table = msg.getCreateOp().getTable();
           store.create(table);
         } else {
-          ring.zab.send(ByteBuffer.wrap(msg.toByteArray()), null);
+          ring.zab.send(ByteBuffer.wrap(msg.toByteArray()), context);
         }
         r = MessageBuilder.buildResponse("Create");
         break;
@@ -85,7 +85,7 @@ public final class DataNode {
             store.insert(c, msg);
           }
         } else {
-          ring.zab.send(ByteBuffer.wrap(msg.toByteArray()), null);
+          ring.zab.send(ByteBuffer.wrap(msg.toByteArray()), context);
         }
         r = MessageBuilder.buildResponse("Insert");
         break;
@@ -96,7 +96,7 @@ public final class DataNode {
             store.update(c, msg);
           }
         } else {
-          ring.zab.send(ByteBuffer.wrap(msg.toByteArray()), null);
+          ring.zab.send(ByteBuffer.wrap(msg.toByteArray()), context);
         }
         r = MessageBuilder.buildResponse("Update");
         break;

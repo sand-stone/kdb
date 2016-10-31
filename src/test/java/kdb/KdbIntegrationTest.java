@@ -36,8 +36,8 @@ public class KdbIntegrationTest extends TestCase {
 
   public void test0() {
     String table = "test0";
-    Client.createTable("http://localhost:8000/", table);
-    Client.dropTable("http://localhost:8000/", table);
+    Client.Result rsp = Client.createTable("http://localhost:8000/", table);
+    rsp = Client.dropTable("http://localhost:8000/", table);
     assertTrue(true);
   }
 
@@ -45,9 +45,10 @@ public class KdbIntegrationTest extends TestCase {
     Client client = new Client("http://localhost:8000/");
     String table = "test1";
     int c = 5;
+    Client.Result rsp;
     while (c-->0) {
-      Client.createTable("http://localhost:8000/", table);
-      Client.dropTable("http://localhost:8000/", table);
+      rsp = Client.createTable("http://localhost:8000/", table);
+      rsp = Client.dropTable("http://localhost:8000/", table);
     }
     assertTrue(true);
   }
@@ -57,12 +58,11 @@ public class KdbIntegrationTest extends TestCase {
     List<byte[]> values = Arrays.asList("val1".getBytes(), "testvalue".getBytes());
     String table = "test2";
     Client.createTable("http://localhost:8000/", table);
-    try { Thread.currentThread().sleep(500); } catch(Exception e) {}
     try (Client client = new Client("http://localhost:8000/", table)) {
-      client.insert(keys, values);
-      try { Thread.currentThread().sleep(500); } catch(Exception e) {}
-      Client.Result rsp = client.get(Client.QueryType.Equal, "testKey".getBytes(), 1);
-      //log.info("rsp {}", rsp);
+      Client.Result rsp = client.insert(keys, values);
+      log.info("rsp {}", rsp);
+      rsp = client.get(Client.QueryType.Equal, "testKey".getBytes(), 1);
+      log.info("rsp {}", rsp);
       if(rsp.count() == 1 && new String(rsp.getValue(0)).equals("testvalue")) {
         assertTrue(true);
       } else

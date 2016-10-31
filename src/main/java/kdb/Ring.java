@@ -17,6 +17,7 @@ import kdb.rsm.Zab;
 import kdb.rsm.ZabConfig;
 import kdb.rsm.ZabException;
 import kdb.rsm.Zxid;
+import kdb.proto.XMessage.Message;
 
 class Ring implements Runnable, StateMachine {
   private static Logger log = LogManager.getLogger(Ring.class);
@@ -67,9 +68,9 @@ class Ring implements Runnable, StateMachine {
   @Override
   public void deliver(Zxid zxid, ByteBuffer stateUpdate, String clientId,
                       Object ctx) {
-    //log.info("quorum deliver operation");
     try {
-      store.handle(stateUpdate);
+      Message msg = store.handle(stateUpdate);
+      JettyTransport.reply(ctx, msg);
     } catch(IOException e) {
       log.info("deliver callback handle {}", e);
     }
@@ -103,9 +104,9 @@ class Ring implements Runnable, StateMachine {
   @Override
   public void recovering(PendingRequests pendingRequests) {
     log.info("Recovering...");
-    // Returns error for all pending requests.
+    Message msg = MessageBuilder.buildErrorResponse("Service Error");
     for (Tuple tp : pendingRequests.pendingSends) {
-      log.info("tuple {}", tp);
+      JettyTransport.reply(tp.param, msg);
     }
   }
 

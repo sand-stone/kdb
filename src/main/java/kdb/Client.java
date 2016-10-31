@@ -105,7 +105,6 @@ public final class Client implements Closeable {
     Message msg;
     try(Client client = new Client(uri)) {
       msg = client.sendMsg(MessageBuilder.buildCreateOp(table));
-      try { Thread.currentThread().sleep(500); } catch(InterruptedException e) {}
     }
     return new Result(msg.getResponse());
   }
@@ -114,7 +113,6 @@ public final class Client implements Closeable {
     Message msg;
     try(Client client = new Client(uri)) {
       msg = client.sendMsg(MessageBuilder.buildDropOp(table));
-      try { Thread.currentThread().sleep(500); } catch(InterruptedException e) {}
     }
     return new Result(msg.getResponse());
   }
