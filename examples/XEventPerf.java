@@ -18,7 +18,7 @@ public class XEventPerf {
   private static UUID[] deviceIds;
 
   private static void init() {
-    deviceIds = new UUID[10000];
+    deviceIds = new UUID[15000000];
     for(int i = 0; i < deviceIds.length; i++) {
       deviceIds[i] = UUID.randomUUID();
     }
@@ -32,7 +32,7 @@ public class XEventPerf {
     public Writer(int id) {
       this.id  = id;
       rnd = new Random();
-      batchSize = 5000;
+      batchSize = 1000;
     }
 
     private void bucketid(ByteBuffer buf) {
@@ -63,25 +63,19 @@ public class XEventPerf {
       List<byte[]> keys = new ArrayList<byte[]>();
       List<byte[]> values = new ArrayList<byte[]>();
       int batch = 0;
-      int retry = 0;
       try(Client client = new Client(uris[0], table)) {
         while(!stop) {
           genData(keys, values);
-          do {
-            Client.Result rsp = client.append(keys, values);
-            if(rsp.status() == Client.Status.Retry) {
-              retry++;
-            } else
-              break;
-          } while (true);
-          //System.out.printf("gen msg %s \n", msg.toString());
+          long t1 = System.nanoTime();
+          Client.Result rsp = client.append(keys, values);
+          long t2 = System.nanoTime();
           keys.clear();
           values.clear();
           batch++;
-          //try {Thread.currentThread().sleep(100);} catch(Exception ex) {}
+          System.out.printf(" insert %d takes %e seconds \n", batchSize, (t2-t1)/1e9);
         }
       }
-      System.out.printf("writer %d inserted %d events with retry %d \n", id, batch*batchSize, retry);
+      System.out.printf("writer %d inserted %d events\n", id, batch*batchSize);
     }
   }
 
@@ -182,7 +176,7 @@ public class XEventPerf {
       }
       System.out.println("start reader threads");
     */
-    try {Thread.currentThread().sleep(10000);} catch(Exception ex) {}
+    try {Thread.currentThread().sleep(5*60000);} catch(Exception ex) {}
     stop = true;
 
     System.out.println("start counter threads");
