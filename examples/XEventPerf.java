@@ -32,7 +32,7 @@ public class XEventPerf {
     public Writer(int id) {
       this.id  = id;
       rnd = new Random();
-      batchSize = 1000;
+      batchSize = 100;
     }
 
     private void bucketid(ByteBuffer buf) {
@@ -183,20 +183,19 @@ public class XEventPerf {
     try {Thread.currentThread().sleep(10000);} catch(Exception ex) {}
     stop = true;
 
-    try {Thread.currentThread().sleep(15000);} catch(Exception ex) {}
     System.out.println("start counter threads");
     new Thread(new Counter(uris[1])).start();
     new Thread(new Counter(uris[2])).start();
     new Thread(new Counter(uris[0])).start();
 
-    try {Thread.currentThread().sleep(70000);} catch(Exception ex) {}
+    try {Thread.currentThread().sleep(3000);} catch(Exception ex) {}
 
     System.out.println("start counter threads");
     new Thread(new Counter(uris[1])).start();
     new Thread(new Counter(uris[2])).start();
     new Thread(new Counter(uris[0])).start();
 
-    try {Thread.currentThread().sleep(15000);} catch(Exception ex) {}
+    try {Thread.currentThread().sleep(10000);} catch(Exception ex) {}
     //Client.dropTable(uris[0], table);
     System.exit(0);
   }
