@@ -60,9 +60,9 @@ public class KdbIntegrationTest extends TestCase {
     Client.createTable("http://localhost:8000/", table);
     try (Client client = new Client("http://localhost:8000/", table)) {
       Client.Result rsp = client.insert(keys, values);
-      log.info("rsp {}", rsp);
+      //log.info("rsp {}", rsp);
       rsp = client.get(Client.QueryType.Equal, "testKey".getBytes(), 1);
-      log.info("rsp {}", rsp);
+      //log.info("rsp {}", rsp);
       if(rsp.count() == 1 && new String(rsp.getValue(0)).equals("testvalue")) {
         assertTrue(true);
       } else
@@ -78,7 +78,6 @@ public class KdbIntegrationTest extends TestCase {
     Client.createTable("http://localhost:8000/", table);
     try(Client client = new Client("http://localhost:8000/", table)) {
       client.insert(keys, values);
-      try { Thread.currentThread().sleep(500); } catch(Exception e) {}
       client.get(Client.QueryType.Equal, "key2".getBytes(), 1);
       client.get(Client.QueryType.Equal, "key2".getBytes(), 1);
       Client.Result rsp = client.get(Client.QueryType.Equal, "key2".getBytes(), 1);
@@ -102,7 +101,6 @@ public class KdbIntegrationTest extends TestCase {
     Client.createTable("http://localhost:8000/", table);
     try (Client client = new Client("http://localhost:8000/", table)) {
       client.insert(keys, values);
-      try { Thread.currentThread().sleep(500); } catch(Exception e) {}
       Client.Result rsp = client.get(Client.QueryType.GreaterEqual, "test4key2".getBytes(), 5);
       if(rsp.count() == 5) {
         rsp = client.get(Client.QueryType.GreaterEqual, rsp.token(), 5);
@@ -112,8 +110,8 @@ public class KdbIntegrationTest extends TestCase {
           assertTrue(false);
       } else
         assertTrue(false);
-      client.sendMsg(MessageBuilder.buildDropOp(table));
     }
+    Client.dropTable("http://localhost:8000/", table);
   }
 
   public void test5() {
@@ -135,7 +133,6 @@ public class KdbIntegrationTest extends TestCase {
         values.add(("value-2-"+i).getBytes());
       }
       client.replace(keys, values);
-      try { Thread.currentThread().sleep(500); } catch(Exception e) {}
       Client.Result rsp = client.get(Client.QueryType.GreaterEqual, "key2".getBytes(), 5);
       //log.info("msg {}", rsp);
       if(rsp.count() == 5) {
@@ -159,7 +156,6 @@ public class KdbIntegrationTest extends TestCase {
     Client.createTable("http://localhost:8000/", table);
     try (Client client = new Client("http://localhost:8000/", table)) {
       client.insert(keys, values);
-      try { Thread.currentThread().sleep(500); } catch(Exception e) {}
       Client.Result rsp = client.get("key3".getBytes(), "key6".getBytes(),5);
       //log.info("msg {}", rsp);
       if(rsp.count() == 4) {
@@ -197,8 +193,6 @@ public class KdbIntegrationTest extends TestCase {
           values.add(("value"+i).getBytes());
         }
         client.append(keys, values);
-        try { Thread.currentThread().sleep(1000); } catch(Exception e) {}
-
         Client.Result rsp = client.get("key0".getBytes(), "key999".getBytes(), 10, 3);
         //log.info("msg {} ==> {} ", rsp, rsp.count());
         if(rsp.count() == 5) {
@@ -222,9 +216,7 @@ public class KdbIntegrationTest extends TestCase {
     Client.createTable("http://localhost:8000/", table);
     try (Client client = new Client("http://localhost:8000/", table)) {
       client.increment(keys);
-      try { Thread.currentThread().sleep(500); } catch(Exception e) {}
       client.increment(keys);
-      try { Thread.currentThread().sleep(500); } catch(Exception e) {}
       Client.Result rsp = client.get("key0".getBytes(), "key999".getBytes(), 50);
       //log.info("test 8 rsp {}", rsp);
       if(rsp.count() > 0) {
@@ -245,16 +237,14 @@ public class KdbIntegrationTest extends TestCase {
     Client.createTable("http://localhost:8000/", table);
     try (Client client = new Client("http://localhost:8000/", table)) {
       for (int i = 0; i < count; i++) {
-      keys.add(("key"+i).getBytes());
+        keys.add(("key"+i).getBytes());
       }
       client.increment(keys);
-      try { Thread.currentThread().sleep(500); } catch(Exception e) {}
       keys.clear();
       for (int i = 0; i < count/2; i++) {
-      keys.add(("key"+i).getBytes());
+        keys.add(("key"+i).getBytes());
       }
       client.increment(keys);
-      try { Thread.currentThread().sleep(500); } catch(Exception e) {}
       Client.Result rsp = client.get("key0".getBytes(), "key999".getBytes(), 50, 2);
       //log.info("test9 rsp:{}", rsp);
       if(rsp.count() > 0) {

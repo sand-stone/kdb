@@ -68,11 +68,13 @@ class Ring implements Runnable, StateMachine {
   @Override
   public void deliver(Zxid zxid, ByteBuffer stateUpdate, String clientId,
                       Object ctx) {
+    Message msg = MessageBuilder.nullMsg;
     try {
-      Message msg = store.handle(stateUpdate);
-      JettyTransport.reply(ctx, msg);
+      msg = store.handle(stateUpdate);
     } catch(IOException e) {
       log.info("deliver callback handle {}", e);
+    } finally {
+      JettyTransport.reply(ctx, msg);
     }
   }
 

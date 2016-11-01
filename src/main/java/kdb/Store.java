@@ -103,18 +103,13 @@ public class Store implements Closeable {
   }
 
   public Message drop(String table) {
-    if(sessions.get(table) == null) {
-      sessions.putIfAbsent(table, new AtomicInteger(-1));
-    }
-    int count;
+    if(sessions.get(table) == null)
+      return MessageBuilder.buildResponse("table does not exist:" + table);
+
     AtomicInteger v = sessions.get(table);
     //log.info("drop count {}", v);
-    while(true) {
-      while((count = v.get()) > 0) {
-        Thread.currentThread().yield();
-      }
-      if(v.get() < 0 || v.compareAndSet(0, -1))
-        break;
+    if(v.get() > 0) {
+      return MessageBuilder.buildResponse("table active:" + table);
     }
     Session session = conn.open_session(null);
     try {
@@ -417,6 +412,9 @@ public class Store implements Closeable {
     } else if(msg.getType() == MessageType.Create) {
       String table = msg.getCreateOp().getTable();
       msg = create(table);
+    } else if(msg.getType() == MessageType.Drop) {
+      String table = msg.getDropOp().getTable();
+      msg = drop(table);
     }
     return msg;
   }

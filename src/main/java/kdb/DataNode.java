@@ -37,7 +37,7 @@ public final class DataNode {
     try {
       String table;
       Store.Context ctx;
-      log.info("msg {} context {}", msg, context);
+      //log.info("msg {} context {}", msg, context);
       switch(msg.getType()) {
       case Create:
         if(standalone) {
@@ -49,13 +49,13 @@ public final class DataNode {
         r = MessageBuilder.buildResponse("Create");
         break;
       case Drop:
+        //log.info("msg {} context {}", msg, context);
         if(standalone) {
           table = msg.getDropOp().getTable();
-          store.drop(table);
+          r = store.drop(table);
         } else {
           ring.zab.send(ByteBuffer.wrap(msg.toByteArray()), context);
         }
-        r = MessageBuilder.buildResponse("Drop");
         break;
       case Get:
         String token = msg.getGetOp().getToken();
@@ -64,12 +64,16 @@ public final class DataNode {
           table = msg.getGetOp().getTable();
           if(table != null && table.length() > 0)
             ctx = store.getContext(table);
-          else
+          else {
+            JettyTransport.reply(context, r);
             break;
+          }
         } else {
           ctx = ctxs.get(token);
-          if(ctx == null)
+          if(ctx == null) {
+            JettyTransport.reply(context, MessageBuilder.emptyMsg);
             break;
+          }
         }
         try {
           r = store.get(ctx, msg);
@@ -111,7 +115,7 @@ public final class DataNode {
       e.printStackTrace();
       throw e;
     }
-    log.info("r {}", r);
+    //log.info("r {}", r);
     return r;
   }
 

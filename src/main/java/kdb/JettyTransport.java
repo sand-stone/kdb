@@ -27,7 +27,7 @@ public final class JettyTransport {
       // This request is sent from other instance.
       return;
     }
-    log.info("ctx {}", ctx);
+    //log.info("ctx {}", ctx);
     HttpServletResponse response =
       (HttpServletResponse)(context.getResponse());
     try {

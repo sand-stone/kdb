@@ -26,7 +26,7 @@ public final class KdbRequestHandler extends HttpServlet {
     throws ServletException, IOException {
     // remove the leading slash from the request path and use that as the key.
     String key = request.getPathInfo();
-    log.info("Got GET request for {}", key);
+    //log.info("Got GET request for {}", key);
     String value = "hello from kdb";
     response.setContentType("text/html");
     response.setStatus(HttpServletResponse.SC_OK);
@@ -52,8 +52,9 @@ public final class KdbRequestHandler extends HttpServlet {
     Message msg = null;
     try {
       msg = Message.parseFrom(value);
-      log.info("msg input {}", msg);
+      //log.info("msg input {}", msg);
       db.process(msg, context);
+      return;
     } catch(InvalidProtocolBufferException e) {
       e.printStackTrace();
       msg = MessageBuilder.buildErrorResponse("InvalidProtocolBufferException");
@@ -67,12 +68,9 @@ public final class KdbRequestHandler extends HttpServlet {
       //log.info(e);
       msg = MessageBuilder.buildErrorResponse(e.getMessage());
     }
-    log.info("Got POST request : {}", msg);
-    /*if(!db.add(command, context)) {
-      response.setContentType("text/html");
-      response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-      context.complete();
-      }*/
+    response.setContentType("text/html");
+    response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+    context.complete();
   }
 
 }
