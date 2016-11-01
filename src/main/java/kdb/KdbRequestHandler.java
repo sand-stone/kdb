@@ -48,7 +48,14 @@ public final class KdbRequestHandler extends HttpServlet {
       return;
     }
     byte[] value = new byte[length];
-    request.getInputStream().read(value);
+    int off = 0;
+    int count = 0;
+    do {
+      count = request.getInputStream().read(value, off, length - off);
+      if(count <= 0)
+        break;
+      off += count;
+    } while(true);
     Message msg = null;
     try {
       msg = Message.parseFrom(value);

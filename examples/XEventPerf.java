@@ -32,7 +32,7 @@ public class XEventPerf {
     public Writer(int id) {
       this.id  = id;
       rnd = new Random();
-      batchSize = 100;
+      batchSize = 1000;
     }
 
     private void bucketid(ByteBuffer buf) {
