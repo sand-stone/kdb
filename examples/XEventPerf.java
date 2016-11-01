@@ -197,6 +197,6 @@ public class XEventPerf {
     while(true) {
       try {Thread.currentThread().sleep(10000);} catch(Exception ex) {}
     }
-    System.exit(0);
+    //System.exit(0);
   }
 }
