@@ -176,7 +176,7 @@ public class XEventPerf {
       }
       System.out.println("start reader threads");
     */
-    try {Thread.currentThread().sleep(5*60*000);} catch(Exception ex) {}
+    try {Thread.currentThread().sleep(5*60*1000);} catch(Exception ex) {}
 
     stop = true;
 
