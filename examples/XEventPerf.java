@@ -176,13 +176,9 @@ public class XEventPerf {
       }
       System.out.println("start reader threads");
     */
-    try {Thread.currentThread().sleep(5*60000);} catch(Exception ex) {}
-    stop = true;
+    try {Thread.currentThread().sleep(5*60*000);} catch(Exception ex) {}
 
-    System.out.println("start counter threads");
-    new Thread(new Counter(uris[1])).start();
-    new Thread(new Counter(uris[2])).start();
-    new Thread(new Counter(uris[0])).start();
+    stop = true;
 
     try {Thread.currentThread().sleep(3000);} catch(Exception ex) {}
 
@@ -191,8 +187,16 @@ public class XEventPerf {
     new Thread(new Counter(uris[2])).start();
     new Thread(new Counter(uris[0])).start();
 
-    try {Thread.currentThread().sleep(10000);} catch(Exception ex) {}
-    //Client.dropTable(uris[0], table);
+    try {Thread.currentThread().sleep(40000);} catch(Exception ex) {}
+
+    System.out.println("start counter threads");
+    new Thread(new Counter(uris[1])).start();
+    new Thread(new Counter(uris[2])).start();
+    new Thread(new Counter(uris[0])).start();
+
+    while(true) {
+      try {Thread.currentThread().sleep(10000);} catch(Exception ex) {}
+    }
     System.exit(0);
   }
 }
