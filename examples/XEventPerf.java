@@ -107,12 +107,12 @@ public class XEventPerf {
     }
 
     public void run() {
-        while(!stop) {
-          try (Client client = new Client(uris[2], table)) {
-            ByteBuffer key = ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN);
-            bucketid(key, 0, 0);
-            Client.Result rsp = client.get(Client.QueryType.GreaterEqual, key.array(), 100);
-          }
+      while(!stop) {
+        try (Client client = new Client(uris[2], table)) {
+          ByteBuffer key = ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN);
+          bucketid(key, 0, 0);
+          Client.Result rsp = client.get(Client.QueryType.GreaterEqual, key.array(), 100);
+        }
       }
     }
   }
@@ -130,18 +130,21 @@ public class XEventPerf {
     }
 
     public void run() {
-      try (Client client = new Client(uri, table)) {
-        ByteBuffer key = ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN);
-        bucketid(key, 0, 0);
-        Client.Result rsp = client.get(Client.QueryType.GreaterEqual, key.array(), 100);
-        int count = rsp.count();
-        //System.out.println("msg:"+msg.getResponse().getKeysCount());
-        while(rsp.token().length() > 0) {
-          rsp = client.get(Client.QueryType.GreaterEqual, rsp.token(), 100);
-          count += rsp.count();
-          //System.out.println("msg:"+msg.getResponse().getKeysCount());
+      while (true) {
+        int count = 0;
+        long t1 = System.nanoTime();
+        try (Client client = new Client(uri, table)) {
+          ByteBuffer key = ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN);
+          bucketid(key, 0, 0);
+          Client.Result rsp = client.get(Client.QueryType.GreaterEqual, key.array(), 1000);
+          count = rsp.count();
+          while(rsp.token().length() > 0) {
+            rsp = client.get(Client.QueryType.GreaterEqual, rsp.token(), 1000);
+            count += rsp.count();
+          }
         }
-        System.out.printf("total # msg %d \n", count);
+        long t2 = System.nanoTime();
+        System.out.printf("total # msg %d scanned in %e seconds \n", count, (t2-t1)/1e9);
       }
     }
   }
@@ -167,32 +170,18 @@ public class XEventPerf {
 
     System.out.println("start writer threads");
 
-    //new Thread(new Scanner()).start();
-    //System.out.println("start scanner threads");
-    /*
-      int nr = 3;
-      for (int i= 0; i < nr; i++) {
-      new Thread(new Reader(i)).start();
-      }
-      System.out.println("start reader threads");
-    */
-    try {Thread.currentThread().sleep(5*60*1000);} catch(Exception ex) {}
-
-    stop = true;
-
     try {Thread.currentThread().sleep(3000);} catch(Exception ex) {}
 
-    System.out.println("start counter threads");
-    new Thread(new Counter(uris[1])).start();
-    new Thread(new Counter(uris[2])).start();
-    new Thread(new Counter(uris[0])).start();
+    int nr = 3;
 
-    try {Thread.currentThread().sleep(40000);} catch(Exception ex) {}
+    for (int i = 0; i < nr; i++) {
+      new Thread(new Counter(uris[1])).start();
+      new Thread(new Counter(uris[2])).start();
+      new Thread(new Counter(uris[0])).start();
+    }
 
-    System.out.println("start counter threads");
-    new Thread(new Counter(uris[1])).start();
-    new Thread(new Counter(uris[2])).start();
-    new Thread(new Counter(uris[0])).start();
+    try {Thread.currentThread().sleep(15*60*1000);} catch(Exception ex) {}
+    stop = true;
 
     while(true) {
       try {Thread.currentThread().sleep(10000);} catch(Exception ex) {}
