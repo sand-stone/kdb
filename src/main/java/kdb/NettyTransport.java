@@ -41,10 +41,10 @@ import kdb.proto.XMessage.Message;
 import com.google.protobuf.InvalidProtocolBufferException;
 import kdb.rsm.ZabException;
 
-public class HttpTransport {
-  private static Logger log = LogManager.getLogger(HttpTransport.class);
+public class NettyTransport {
+  private static Logger log = LogManager.getLogger(NettyTransport.class);
 
-  public HttpTransport() { }
+  public NettyTransport() { }
 
   public void start(PropertiesConfiguration config) {
     int port = config.getInt("port");
@@ -216,6 +216,6 @@ public class HttpTransport {
     Configurations configs = new Configurations();
     PropertiesConfiguration config = configs.properties(propertiesFile);
 
-    new HttpTransport().start(config);
+    new NettyTransport().start(config);
   }
 }

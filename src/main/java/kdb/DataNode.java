@@ -32,21 +32,20 @@ public final class DataNode {
     this.ctxs = new ConcurrentHashMap<String, Store.Context>();
   }
 
-  public Message process(Message msg, Object context) throws ZabException.TooManyPendingRequests, ZabException.InvalidPhase {
+  public void process(Message msg, Object context) throws ZabException.TooManyPendingRequests, ZabException.InvalidPhase {
     Message r = MessageBuilder.nullMsg;
     try {
       String table;
       Store.Context ctx;
-      //log.info("msg {} context {}", msg, context);
+      //log.info("msg {} context {} standalone {}", msg, context, standalone);
       switch(msg.getType()) {
       case Create:
         if(standalone) {
           table = msg.getCreateOp().getTable();
-          store.create(table);
+          r = store.create(table);
         } else {
           ring.zab.send(ByteBuffer.wrap(msg.toByteArray()), context);
         }
-        r = MessageBuilder.buildResponse("Create");
         break;
       case Drop:
         //log.info("msg {} context {}", msg, context);
@@ -71,7 +70,7 @@ public final class DataNode {
         } else {
           ctx = ctxs.get(token);
           if(ctx == null) {
-            JettyTransport.reply(context, MessageBuilder.emptyMsg);
+            r = MessageBuilder.emptyMsg;
             break;
           }
         }
@@ -84,30 +83,27 @@ public final class DataNode {
           } else {
             ctxs.putIfAbsent(ctx.token(), ctx);
           }
-          JettyTransport.reply(context, r);
         }
         break;
       case Insert:
         if(standalone) {
           table = msg.getInsertOp().getTable();
           try(Store.Context c = store.getContext(table)) {
-            store.insert(c, msg);
+            r = store.insert(c, msg);
           }
         } else {
           ring.zab.send(ByteBuffer.wrap(msg.toByteArray()), context);
         }
-        r = MessageBuilder.buildResponse("Insert");
         break;
       case Update:
         if(standalone) {
           table = msg.getUpdateOp().getTable();
           try(Store.Context c = store.getContext(table)) {
-            store.update(c, msg);
+            r = store.update(c, msg);
           }
         } else {
           ring.zab.send(ByteBuffer.wrap(msg.toByteArray()), context);
         }
-        r = MessageBuilder.buildResponse("Update");
         break;
       }
     } catch(Exception e) {
@@ -116,7 +112,9 @@ public final class DataNode {
       throw e;
     }
     //log.info("r {}", r);
-    return r;
+    if(r != MessageBuilder.nullMsg) {
+      JettyTransport.reply(context, r);
+    }
   }
 
 }
