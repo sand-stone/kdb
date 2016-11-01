@@ -32,7 +32,7 @@ public class XEventPerf {
     public Writer(int id) {
       this.id  = id;
       rnd = new Random();
-      batchSize = 1000;
+      batchSize = 5000;
     }
 
     private void bucketid(ByteBuffer buf) {
@@ -53,7 +53,9 @@ public class XEventPerf {
         ByteBuffer key = ByteBuffer.allocate(18).order(ByteOrder.BIG_ENDIAN);
         bucketid(key); deviceid(key);
         keys.add(key.array());
-        values.add(("[value#"+id+"#]").getBytes());
+        //values.add(("[value#"+id+"#]").getBytes());
+        byte[] payload = new byte[1228/*1024*1.2*/];
+        rnd.nextBytes(payload);
       }
     }
 
@@ -164,7 +166,7 @@ public class XEventPerf {
 
     Client.createTable(uris[0], table);
 
-    int nw = 2;
+    int nw = 3;
     for (int i = 0; i < nw; i++) {
       new Thread(new Writer(i)).start();
     }
