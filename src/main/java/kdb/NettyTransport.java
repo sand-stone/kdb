@@ -63,11 +63,8 @@ public class NettyTransport {
 
     Store store = new Store(config.getString("store"));
     boolean standalone = config.getBoolean("standalone", false);
-    final Ring ring = new Ring(config.getString("ringaddr"), config.getString("leader"), config.getString("logDir"));
-    if(!standalone) {
-      ring.bind(store);
-    }
-    DataNode datanode = new DataNode(ring, store, standalone);
+
+    DataNode datanode = new DataNode(JettyTransport.configRings(config, standalone, store), store, standalone);
 
     EventLoopGroup bossGroup = new NioEventLoopGroup(1);
     EventLoopGroup workerGroup = new NioEventLoopGroup();

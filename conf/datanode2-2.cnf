@@ -1,0 +1,9 @@
+serverid=2
+port=8001
+store=data/data2
+ringaddr=localhost:5001
+leader=localhost:5000
+logDir=log/server2-1
+ringaddr=localhost:6001
+leader=localhost:6000
+logDir=log/server2-2

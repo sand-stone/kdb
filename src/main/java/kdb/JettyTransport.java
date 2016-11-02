@@ -15,6 +15,8 @@ import kdb.rsm.ZabException;
 import java.io.File;
 import java.io.OutputStream;
 import java.io.IOException;
+import java.util.List;
+import java.util.ArrayList;
 
 public final class JettyTransport {
   private static final Logger log = LogManager.getLogger(JettyTransport.class);
@@ -42,17 +44,34 @@ public final class JettyTransport {
     }
   }
 
+  static List<Ring> configRings(PropertiesConfiguration config, boolean standalone, Store store) {
+    List ringaddrs = config.getList("ringaddr");
+    List leaders = config.getList("leader");
+    List logs = config.getList("logDir");
+
+    int len = ringaddrs.size();
+    if((leaders.size() > 0 && len != leaders.size()) || len != logs.size())
+      throw new KdbException("ring config error");
+
+    List<Ring> rings = new ArrayList<Ring>();
+    for(int i = 0; i < len; i++) {
+      Ring ring = new Ring((String)ringaddrs.get(i), leaders.size() == 0? null: (String)leaders.get(i), (String)logs.get(i));
+      rings.add(ring);
+      if(!standalone) {
+        ring.bind(store);
+      }
+    }
+    return rings;
+  }
+
   public void start(PropertiesConfiguration config) throws Exception {
     int port = config.getInt("port");
     boolean SSL = config.getBoolean("ssl", false);
 
     Store store = new Store(config.getString("store"));
     boolean standalone = config.getBoolean("standalone", false);
-    final Ring ring = new Ring(config.getString("ringaddr"), config.getString("leader"), config.getString("logDir"));
-    if(!standalone) {
-      ring.bind(store);
-    }
-    DataNode db = new DataNode(ring, store, standalone);
+
+    DataNode db = new DataNode(configRings(config, standalone, store), store, standalone);
 
     Server server = new Server(port);
     ServletHandler handler = new ServletHandler();

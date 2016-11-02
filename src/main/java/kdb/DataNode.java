@@ -19,7 +19,8 @@ final class DataNode {
   private static Logger log = LogManager.getLogger(DataNode.class);
   private Store store;
   private boolean standalone;
-  private Ring ring;
+  private List<Ring> rings;
+  private Random rnd;
   private ConcurrentHashMap<String, Store.Context> ctxs;
   private ConcurrentHashMap<String, Counters> counters;
 
@@ -77,17 +78,13 @@ final class DataNode {
     }
   }
 
-  public DataNode() {
-    this.ctxs = new ConcurrentHashMap<String, Store.Context>();
-    this.counters = new ConcurrentHashMap<String, Counters>();
-  }
-
-  public DataNode(Ring ring, Store store, boolean standalone) {
-    this.ring = ring;
+  public DataNode(List<Ring> rings, Store store, boolean standalone) {
+    this.rings = rings;
     this.store = store;
     this.standalone = standalone;
     this.ctxs = new ConcurrentHashMap<String, Store.Context>();
     this.counters = new ConcurrentHashMap<String, Counters>();
+    this.rnd = new Random();
   }
 
   public Stats stats() {
@@ -159,6 +156,10 @@ final class DataNode {
     counts.incrementInsert();
   }
 
+  private Ring ring() {
+    return rings.get(rnd.nextInt(rings.size()));
+  }
+
   public void process(Message msg, Object context) throws ZabException.TooManyPendingRequests, ZabException.InvalidPhase {
     Message r = MessageBuilder.nullMsg;
     try {
@@ -172,7 +173,7 @@ final class DataNode {
         if(standalone) {
           r = store.create(table);
         } else {
-          ring.zab.send(ByteBuffer.wrap(msg.toByteArray()), context);
+          ring().zab.send(ByteBuffer.wrap(msg.toByteArray()), context);
         }
         break;
       case Drop:
@@ -182,7 +183,7 @@ final class DataNode {
         if(standalone) {
           r = store.drop(table);
         } else {
-          ring.zab.send(ByteBuffer.wrap(msg.toByteArray()), context);
+          ring().zab.send(ByteBuffer.wrap(msg.toByteArray()), context);
         }
         break;
       case Get:
@@ -195,7 +196,6 @@ final class DataNode {
             ctx = store.getContext(table);
           else {
             r = MessageBuilder.emptyMsg;
-            //JettyTransport.reply(context, r);
             break;
           }
         } else {
@@ -225,7 +225,7 @@ final class DataNode {
             r = store.insert(c, msg);
           }
         } else {
-          ring.zab.send(ByteBuffer.wrap(msg.toByteArray()), context);
+          ring().zab.send(ByteBuffer.wrap(msg.toByteArray()), context);
         }
         break;
       case Update:
@@ -236,7 +236,7 @@ final class DataNode {
             r = store.update(c, msg);
           }
         } else {
-          ring.zab.send(ByteBuffer.wrap(msg.toByteArray()), context);
+          ring().zab.send(ByteBuffer.wrap(msg.toByteArray()), context);
         }
         break;
       }
