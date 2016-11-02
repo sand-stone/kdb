@@ -29,7 +29,6 @@ public final class Client implements Closeable {
   private String uri;
   private String table;
   private String token;
-  private int timeout;
 
   public enum QueryType {
     Equal,
@@ -90,20 +89,20 @@ public final class Client implements Closeable {
     }
   }
 
-  public Client(String uri, String table) {
-    config = new DefaultAsyncHttpClientConfig.Builder().setRequestTimeout(Integer.MAX_VALUE).build();
+  public Client(String uri, String table, int timeout) {
+    config = new DefaultAsyncHttpClientConfig.Builder().setRequestTimeout(timeout).build();
     client = new DefaultAsyncHttpClient(config);
     this.uri = uri;
     this.table = table;
     this.token = "";
   }
 
-  public Client(String uri) {
-    this(uri, null);
+  public Client(String uri, String table) {
+    this(uri, table, Integer.MAX_VALUE);
   }
 
-  public void setRequestTimeoutInMs(int timeout) {
-    this.timeout = timeout;
+  public Client(String uri) {
+    this(uri, null);
   }
 
   public static Result createTable(String uri, String table) {
