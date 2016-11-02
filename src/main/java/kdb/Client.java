@@ -29,6 +29,7 @@ public final class Client implements Closeable {
   private String uri;
   private String table;
   private String token;
+  private int timeout;
 
   public enum QueryType {
     Equal,
@@ -99,6 +100,10 @@ public final class Client implements Closeable {
 
   public Client(String uri) {
     this(uri, null);
+  }
+
+  public void setRequestTimeoutInMs(int timeout) {
+    this.timeout = timeout;
   }
 
   public static Result createTable(String uri, String table) {
@@ -188,7 +193,7 @@ public final class Client implements Closeable {
     return new Result(msg.getResponse());
   }
 
-  public Message sendMsg(Message msg) {
+  private Message sendMsg(Message msg) {
     Message rsp = MessageBuilder.nullMsg;
     try {
       Response r;
@@ -201,15 +206,18 @@ public final class Client implements Closeable {
       //log.info("rsp: {}", rsp);
     } catch(InterruptedException e) {
       log.info(e);
+      e.printStackTrace();
     } catch(ExecutionException e) {
       log.info(e);
+      e.printStackTrace();
     } catch(InvalidProtocolBufferException e) {
       log.info(e);
+      e.printStackTrace();
     }
     return rsp;
   }
 
-  public Message sendMsg(String msg) {
+  private Message sendMsg(String msg) {
     Message rsp = MessageBuilder.nullMsg;
     try {
       Response r;
@@ -222,8 +230,10 @@ public final class Client implements Closeable {
       log.info("rsp: {}", new String(data));
     } catch(InterruptedException e) {
       log.info(e);
+      e.printStackTrace();
     } catch(ExecutionException e) {
       log.info(e);
+      e.printStackTrace();
     }
     return rsp;
   }
