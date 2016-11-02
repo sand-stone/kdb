@@ -172,7 +172,7 @@ public class XEventPerf {
 
     try {Thread.currentThread().sleep(3000);} catch(Exception ex) {}
 
-    int nr = 3;
+    int nr = 10;
 
     for (int i = 0; i < nr; i++) {
       new Thread(new Counter(uris[1])).start();

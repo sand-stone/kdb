@@ -11,8 +11,10 @@ import org.apache.logging.log4j.LogManager;
 import kdb.proto.XMessage.Message;
 import kdb.rsm.ZabException;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.gson.GsonBuilder;
+import com.google.gson.Gson;
 
-public final class KdbRequestHandler extends HttpServlet {
+final class KdbRequestHandler extends HttpServlet {
   private static final Logger log = LogManager.getLogger(KdbRequestHandler.class);
 
   private final DataNode db;
@@ -26,8 +28,9 @@ public final class KdbRequestHandler extends HttpServlet {
     throws ServletException, IOException {
     // remove the leading slash from the request path and use that as the key.
     String key = request.getPathInfo();
-    //log.info("Got GET request for {}", key);
-    String value = "hello from kdb";
+    GsonBuilder builder = new GsonBuilder();
+    Gson gson = builder.create();
+    String value = gson.toJson(db.stats());
     response.setContentType("text/html");
     response.setStatus(HttpServletResponse.SC_OK);
     response.setContentLength(value.length());

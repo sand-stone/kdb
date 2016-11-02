@@ -26,13 +26,13 @@ public class Store implements Closeable {
   private static Logger log = LogManager.getLogger(Store.class);
   private Connection conn;
   private String db;
-  private static final String dbconfig = "create,session_max=5000,cache_size=1GB,eviction=(threads_max=2,threads_min=2),lsm_manager=(merge=true,worker_thread_max=3),checkpoint=(log_size=2GB,wait=3600)";
-  private ConcurrentHashMap<String, AtomicInteger> sessions;
+  private static final String dbconfig = "create,session_max=5000,cache_size=1GB,eviction=(threads_max=2,threads_min=2),lsm_manager=(merge=true,worker_thread_max=3),checkpoint=(log_size=2GB,wait=300)";
+  ConcurrentHashMap<String, AtomicInteger> tables;
 
   public Store(String location) {
     Utils.checkDir(location);
     conn = wiredtiger.open(location, dbconfig);
-    sessions = new ConcurrentHashMap<String, AtomicInteger>();
+    tables = new ConcurrentHashMap<String, AtomicInteger>();
   }
 
   public class Context implements Closeable {
@@ -52,10 +52,10 @@ public class Store implements Closeable {
       }
       session = Store.this.conn.open_session(null);
       cursor = session.open_cursor("table:"+table, null, null);
-      if(sessions.get(table) == null) {
-        sessions.putIfAbsent(table, new AtomicInteger());
+      if(tables.get(table) == null) {
+        tables.putIfAbsent(table, new AtomicInteger());
       }
-      int v = sessions.get(table).getAndIncrement();
+      int v = tables.get(table).getAndIncrement();
       if(v < 0) {
         done = true;
         throw new KdbException("table is dropped");
@@ -75,7 +75,7 @@ public class Store implements Closeable {
     public void close() {
       cursor.close();
       session.close(null);
-      sessions.get(table).getAndDecrement();
+      tables.get(table).getAndDecrement();
       counts.getAndDecrement();
       done = true;
       bound = null;
@@ -87,7 +87,7 @@ public class Store implements Closeable {
   }
 
   public Message create(String table) {
-    if(sessions.get(table) != null) {
+    if(tables.get(table) != null) {
       //throw new KdbException("table existed");
       //log.info("{} table already existed", table);
       return MessageBuilder.buildResponse("table already existed:" + table);
@@ -103,10 +103,10 @@ public class Store implements Closeable {
   }
 
   public Message drop(String table) {
-    if(sessions.get(table) == null)
+    if(tables.get(table) == null)
       return MessageBuilder.buildResponse("table does not exist:" + table);
 
-    AtomicInteger v = sessions.get(table);
+    AtomicInteger v = tables.get(table);
     //log.info("drop count {}", v);
     if(v.get() > 0) {
       return MessageBuilder.buildResponse("table active:" + table);
@@ -118,7 +118,7 @@ public class Store implements Closeable {
       log.info("{} table not exist", table);
     }
     session.close(null);
-    sessions.remove(table);
+    tables.remove(table);
     return MessageBuilder.buildResponse("drop " + table);
   }
 
