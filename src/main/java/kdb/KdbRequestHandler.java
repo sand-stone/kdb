@@ -62,6 +62,7 @@ final class KdbRequestHandler extends HttpServlet {
     Message msg = null;
     try {
       msg = Message.parseFrom(value);
+      value = null;
       //log.info("msg input {}", msg);
       db.process(msg, context);
       return;
