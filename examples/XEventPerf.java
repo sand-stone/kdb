@@ -32,7 +32,7 @@ public class XEventPerf {
     public Writer(int id) {
       this.id  = id;
       rnd = new Random();
-      batchSize = 3000;
+      batchSize = 5000;
     }
 
     private void bucketid(ByteBuffer buf) {
@@ -137,10 +137,10 @@ public class XEventPerf {
         try (Client client = new Client(uri, table)) {
           ByteBuffer key = ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN);
           bucketid(key, 0, 0);
-          Client.Result rsp = client.get(Client.QueryType.GreaterEqual, key.array(), 1000);
+          Client.Result rsp = client.get(Client.QueryType.GreaterEqual, key.array(), 10000);
           count = rsp.count();
           while(rsp.token().length() > 0) {
-            rsp = client.get(Client.QueryType.GreaterEqual, rsp.token(), 1000);
+            rsp = client.get(Client.QueryType.GreaterEqual, rsp.token(), 10000);
             count += rsp.count();
           }
         }
@@ -181,7 +181,7 @@ public class XEventPerf {
       //new Thread(new Counter(uris[0])).start();
     }
 
-    try {Thread.currentThread().sleep(15*60*1000);} catch(Exception ex) {}
+    try {Thread.currentThread().sleep(60*60*1000);} catch(Exception ex) {}
     stop = true;
 
     while(true) {
