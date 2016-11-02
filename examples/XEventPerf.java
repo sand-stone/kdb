@@ -32,7 +32,7 @@ public class XEventPerf {
     public Writer(int id) {
       this.id  = id;
       rnd = new Random();
-      batchSize = 1000;
+      batchSize = 3000;
     }
 
     private void bucketid(ByteBuffer buf) {
@@ -171,7 +171,7 @@ public class XEventPerf {
 
     System.out.println("start writer threads");
 
-    try {Thread.currentThread().sleep(3000);} catch(Exception ex) {}
+    try {Thread.currentThread().sleep(5000);} catch(Exception ex) {}
 
     int nr = 10;
 
