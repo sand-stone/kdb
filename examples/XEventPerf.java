@@ -178,7 +178,7 @@ public class XEventPerf {
     for (int i = 0; i < nr; i++) {
       new Thread(new Counter(uris[1])).start();
       new Thread(new Counter(uris[2])).start();
-      new Thread(new Counter(uris[0])).start();
+      //new Thread(new Counter(uris[0])).start();
     }
 
     try {Thread.currentThread().sleep(15*60*1000);} catch(Exception ex) {}
