@@ -73,7 +73,7 @@ public class XEventPerf {
           values.clear();
           batch++;
           if(batch%100 == 0)
-            System.out.printf(" insert %d takes %e seconds \n", batchSize, (t2-t1)/1e9);
+            System.out.printf("writer %d, %d events takes %e seconds, total %d \n", id, batchSize, (t2-t1)/1e9, batch*batchSize);
         }
       }
       System.out.printf("writer %d inserted %d events\n", id, batch*batchSize);
@@ -164,7 +164,7 @@ public class XEventPerf {
 
     Client.createTable(uris[0], table);
 
-    int nw = 5;
+    int nw = 10;
     for (int i = 0; i < nw; i++) {
       new Thread(new Writer(i)).start();
     }
