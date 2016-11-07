@@ -42,9 +42,11 @@ class Ring implements Runnable, StateMachine {
       File logdata = new File(logDir);
       if (!logdata.exists()) {
         logdata.mkdirs();
+        log.info("start new");
         zab = new Zab(this, config, this.serverId, joinPeer);
       } else {
         // Recovers from log directory.
+        log.info("recover from log");
         zab = new Zab(this, config);
       }
       this.serverId = zab.getServerId();

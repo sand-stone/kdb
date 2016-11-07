@@ -9,20 +9,40 @@ public class HelloWorld {
     List<byte[]> keys = new ArrayList<byte[]>();
     List<byte[]> values = new ArrayList<byte[]>();
 
-    for(int i = 0; i < 10; i++) {
-      keys.add(("key"+i).getBytes());
-      values.add(("value"+i).getBytes());
-    }
-
     String table = "helloworld";
     Client.createTable("http://localhost:8000", table);
-    try(Client client = new Client("http://localhost:8000", table)) {
-      Client.Result r = client.insert(keys, values);
-      System.out.println("r :" + r);
-      r = client.get("key3".getBytes(), "key8".getBytes(), 20);
-      System.out.println("r :" + r);
+    int start = 0; int batch = 10;
+    while(true) {
+      for(int i = 0; i < batch; i++) {
+        keys.add(("key"+ (start + i)).getBytes());
+        values.add(("value"+ (start + i)).getBytes());
+      }
+      try(Client client = new Client("http://localhost:8000", table)) {
+        Client.Result r = client.insert(keys, values);
+        System.out.println("r :" + r);
+        //r = client.get(("key"+start).getBytes(), ("key"+(start+5)).getBytes(), 20);
+        System.out.println("r :" + r);
+      }
+
+      boolean s = false;
+      do {
+        try {
+          try(Client client = new Client("http://localhost:8002", table)) {
+            Client.Result r = client.get(Client.QueryType.GreaterEqual, "key".getBytes(), 100);
+            System.out.println("r :" + r);
+            s = true;
+            break;
+          }
+        } catch(Exception e) {
+          System.out.println(e.getMessage());
+        }
+        try { Thread.currentThread().sleep(2000); } catch (InterruptedException e) {}
+      } while(!s);
+      keys.clear(); values.clear();
+      start += batch;
+      try { Thread.currentThread().sleep(5000); } catch (InterruptedException e) {}
     }
-    Client.dropTable("http://localhost:8000", table);
-    System.exit(0);
+    //Client.dropTable("http://localhost:8000", table);
+    //System.exit(0);
   }
 }

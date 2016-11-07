@@ -174,6 +174,7 @@ final class DataNode {
           r = store.create(table);
         } else {
           ring().zab.send(ByteBuffer.wrap(msg.toByteArray()), context);
+          ring().zab.takeSnapshot(context);
         }
         break;
       case Drop:
