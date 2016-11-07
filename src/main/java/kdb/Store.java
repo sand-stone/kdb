@@ -399,7 +399,7 @@ public class Store implements Closeable {
     byte[] arr = new byte[data.remaining()];
     data.get(arr);
     Message msg = Message.parseFrom(arr);
-    log.info("handle {}", msg);
+    //log.info("handle {}", msg);
     if(msg.getType() == MessageType.Insert) {
       String table = msg.getInsertOp().getTable();
       try(Store.Context ctx = getContext(table)) {
