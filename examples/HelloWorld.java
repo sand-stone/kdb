@@ -1,33 +1,28 @@
 import kdb.Client;
-import kdb.MessageBuilder;
-import kdb.proto.XMessage.Message;
-import kdb.proto.XMessage.InsertOperation;
-import kdb.proto.XMessage.UpdateOperation;
-import kdb.proto.XMessage.GetOperation;
-import kdb.proto.XMessage.DropOperation;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.nio.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class HelloWorld {
 
   public static void main(String[] args) {
-    List<byte[]> keys = Arrays.asList("key1".getBytes(), "testKey".getBytes());
-    List<byte[]> values = Arrays.asList("val1".getBytes(), "testvalue".getBytes());
-    Client client = new Client();
+    List<byte[]> keys = new ArrayList<byte[]>();
+    List<byte[]> values = new ArrayList<byte[]>();
+
+    for(int i = 0; i < 10; i++) {
+      keys.add(("key"+i).getBytes());
+      values.add(("value"+i).getBytes());
+    }
+
     String table = "helloworld";
-    Message msg = client.sendMsg("http://localhost:8000/", MessageBuilder.buildCreateOp(table));
-    System.out.println("create:" + msg);
-    try { Thread.currentThread().sleep(500); } catch(Exception e) {}
-    msg = client.sendMsg("http://localhost:8000/", MessageBuilder.buildInsertOp(table, keys, values));
-    System.out.println("insert:" + msg);
-    try { Thread.currentThread().sleep(500); } catch(Exception e) {}
-    msg = client.sendMsg("http://localhost:8000/", MessageBuilder.buildGetOp(table, GetOperation.Type.Equal, "testKey".getBytes()));
-    System.out.println("get:" + msg);
-    msg = client.sendMsg("http://localhost:8000/", MessageBuilder.buildDropOp(table));
-    System.out.println("drop:" + msg);
+    Client.createTable("http://localhost:8000", table);
+    try(Client client = new Client("http://localhost:8000", table)) {
+      Client.Result r = client.insert(keys, values);
+      System.out.println("r :" + r);
+      r = client.get("key3".getBytes(), "key8".getBytes(), 20);
+      System.out.println("r :" + r);
+    }
+    Client.dropTable("http://localhost:8000", table);
     System.exit(0);
   }
 }
