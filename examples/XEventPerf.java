@@ -56,6 +56,7 @@ public class XEventPerf {
         //values.add(("[value#"+id+"#]").getBytes());
         byte[] payload = new byte[1228/*1024*1.2*/];
         rnd.nextBytes(payload);
+        values.add(payload);
       }
     }
 
