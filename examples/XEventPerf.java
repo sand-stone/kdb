@@ -73,8 +73,9 @@ public class XEventPerf {
           keys.clear();
           values.clear();
           batch++;
-          if(batch%1000 == 0)
-            System.out.printf("writer %d, per event takes %e seconds, total %d \n", id, batch*batchSize/((t2-t1)/1e9), batch*batchSize);
+          if(batch%100 == 0)
+            System.out.printf("writer %d, total %d events takes %e seconds, rate %e \n", id, batch*batchSize,
+                              (t2-t1)/1e9, batch*batchSize/((t2-t1)/1e9));
         }
       }
       System.out.printf("writer %d inserted %d events\n", id, batch*batchSize);
