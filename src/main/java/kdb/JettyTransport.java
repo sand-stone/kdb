@@ -30,17 +30,21 @@ public final class JettyTransport {
       return;
     }
     //log.info("ctx {}", ctx);
-    HttpServletResponse response =
-      (HttpServletResponse)(context.getResponse());
+    HttpServletResponse response = null;
     try {
+      response = (HttpServletResponse)(context.getResponse());
       OutputStream os =response.getOutputStream();
       os.write(msg.toByteArray());
     } catch(IOException e) {
       log.info(e);
+    } catch (IllegalStateException e) {
+      log.info(e);
     } finally {
-      response.setContentType("text/html");
-      response.setStatus(HttpServletResponse.SC_OK);
-      context.complete();
+      if(response != null) {
+        response.setContentType("text/html");
+        response.setStatus(HttpServletResponse.SC_OK);
+        context.complete();
+      }
     }
   }
 

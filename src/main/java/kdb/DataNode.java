@@ -173,7 +173,7 @@ final class DataNode {
     }
   }
 
-  public Message process(Message msg, Object context) throws ZabException.TooManyPendingRequests, ZabException.InvalidPhase {
+  public void process(Message msg, Object context) throws ZabException.TooManyPendingRequests, ZabException.InvalidPhase {
     Message r = MessageBuilder.nullMsg;
     try {
       String table;
@@ -263,12 +263,6 @@ final class DataNode {
     if(r != MessageBuilder.nullMsg) {
       JettyTransport.reply(context, r);
     }
-
-    return r;
-    //log.info("r {}", r);
-    //if(r != MessageBuilder.nullMsg) {
-      //JettyTransport.reply(context, r);
-    //}
   }
 
 }
