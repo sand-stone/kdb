@@ -11,7 +11,10 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.commons.configuration2.*;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
-import org.asynchttpclient.*;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.util.BytesContentProvider;
+//import org.asynchttpclient.*;
 import java.util.concurrent.Future;
 
 import kdb.proto.XMessage.Message;
@@ -24,8 +27,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 
 public final class Client implements Closeable {
   private static Logger log = LogManager.getLogger(Client.class);
-  final AsyncHttpClientConfig config;
-  AsyncHttpClient client;
+  HttpClient client;
   private String uri;
   private String table;
   private String token;
@@ -90,8 +92,12 @@ public final class Client implements Closeable {
   }
 
   public Client(String uri, String table, int timeout) {
-    config = new DefaultAsyncHttpClientConfig.Builder().setRequestTimeout(timeout).build();
-    client = new DefaultAsyncHttpClient(config);
+    try {
+      client = new HttpClient();
+      client.start();
+    } catch(Exception e) {
+      throw new KdbException(e);
+    }
     this.uri = uri;
     this.table = table;
     this.token = "";
@@ -195,12 +201,11 @@ public final class Client implements Closeable {
   private Message sendMsg(Message msg) {
     Message rsp = MessageBuilder.nullMsg;
     try {
-      Response r;
-      r=client.preparePost(uri)
-        .setBody(msg.toByteArray())
-        .execute()
-        .get();
-      byte[] data = r.getResponseBodyAsBytes();
+      ContentResponse r;
+      r = client.POST(uri)
+        .content(new BytesContentProvider(msg.toByteArray()))
+        .send();
+      byte[] data = r.getContent();
       rsp = Message.parseFrom(data);
       //log.info("rsp: {}", rsp);
     } catch(InterruptedException e) {
@@ -209,28 +214,10 @@ public final class Client implements Closeable {
     } catch(ExecutionException e) {
       log.info(e);
       e.printStackTrace();
+    } catch(TimeoutException e) {
+      log.info(e);
+      e.printStackTrace();
     } catch(InvalidProtocolBufferException e) {
-      log.info(e);
-      e.printStackTrace();
-    }
-    return rsp;
-  }
-
-  private Message sendMsg(String msg) {
-    Message rsp = MessageBuilder.nullMsg;
-    try {
-      Response r;
-      r=client.prepareGet(uri)
-        .setBody(msg.getBytes())
-        .execute()
-        .get();
-      byte[] data = r.getResponseBodyAsBytes();
-      //rsp = Message.parseFrom(data);
-      log.info("rsp: {}", new String(data));
-    } catch(InterruptedException e) {
-      log.info(e);
-      e.printStackTrace();
-    } catch(ExecutionException e) {
       log.info(e);
       e.printStackTrace();
     }
@@ -248,8 +235,8 @@ public final class Client implements Closeable {
   public void close() {
     try {
       releaseToken();
-      client.close();
-    } catch(IOException e) {}
+      client.stop();
+    } catch(Exception e) {}
   }
 
 }

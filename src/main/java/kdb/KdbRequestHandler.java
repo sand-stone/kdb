@@ -68,6 +68,7 @@ final class KdbRequestHandler extends HttpServlet {
       return;
     } catch(InvalidProtocolBufferException e) {
       e.printStackTrace();
+      log.info("value {} length {}", value, value.length);
       msg = MessageBuilder.buildErrorResponse("InvalidProtocolBufferException");
     } catch(ZabException.TooManyPendingRequests e) {
       //log.info(e);

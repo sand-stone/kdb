@@ -14,14 +14,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.commons.configuration2.*;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
-import org.asynchttpclient.*;
 import java.util.concurrent.Future;
-
-import kdb.proto.XMessage.Message;
-import kdb.proto.XMessage.InsertOperation;
-import kdb.proto.XMessage.UpdateOperation;
-import kdb.proto.XMessage.GetOperation;
-import kdb.proto.XMessage.DropOperation;
 
 public class KdbIntegrationTest extends TestCase {
   private static Logger log = LogManager.getLogger(KdbIntegrationTest.class);

@@ -12,7 +12,8 @@ public class HelloWorld {
     String table = "helloworld";
     Client.createTable("http://localhost:8000", table);
     int start = 0; int batch = 10;
-    while(true) {
+    boolean stop = false;
+    while(!stop) {
       for(int i = 0; i < batch; i++) {
         keys.add(("key"+ (start + i)).getBytes());
         values.add(("value"+ (start + i)).getBytes());
@@ -40,9 +41,14 @@ public class HelloWorld {
       } while(!s);
       keys.clear(); values.clear();
       start += batch;
-      try { Thread.currentThread().sleep(5000); } catch (InterruptedException e) {}
+      System.out.println("start :" + start);
+      try {
+        Thread.currentThread().sleep(2000);
+        if(start > 60)
+          stop = true;
+      } catch (InterruptedException e) {}
     }
-    //Client.dropTable("http://localhost:8000", table);
-    //System.exit(0);
+    Client.dropTable("http://localhost:8000", table);
+    System.exit(0);
   }
 }
