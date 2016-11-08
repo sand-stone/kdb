@@ -18,7 +18,7 @@ public class XEventPerf {
   private static UUID[] deviceIds;
 
   private static void init() {
-    deviceIds = new UUID[150000000];
+    deviceIds = new UUID[15000];
     for(int i = 0; i < deviceIds.length; i++) {
       deviceIds[i] = UUID.randomUUID();
     }

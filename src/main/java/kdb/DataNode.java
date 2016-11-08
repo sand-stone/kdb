@@ -160,7 +160,7 @@ final class DataNode {
     return rings.get(rnd.nextInt(rings.size()));
   }
 
-  public void process(Message msg, Object context) throws ZabException.TooManyPendingRequests, ZabException.InvalidPhase {
+  public Message process(Message msg, Object context) throws ZabException.TooManyPendingRequests, ZabException.InvalidPhase {
     Message r = MessageBuilder.nullMsg;
     try {
       String table;
@@ -245,10 +245,11 @@ final class DataNode {
       e.printStackTrace();
       throw e;
     }
+    return r;
     //log.info("r {}", r);
-    if(r != MessageBuilder.nullMsg) {
-      JettyTransport.reply(context, r);
-    }
+    //if(r != MessageBuilder.nullMsg) {
+      //JettyTransport.reply(context, r);
+    //}
   }
 
 }

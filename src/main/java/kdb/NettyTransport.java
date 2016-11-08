@@ -135,8 +135,7 @@ public class NettyTransport {
             byte[] bytes = new byte[buf.readableBytes()];
             buf.readBytes(bytes);
             msg = Message.parseFrom(bytes);
-            datanode.process(msg, ctx);
-            return;
+            msg = datanode.process(msg, ctx);
           } catch(InvalidProtocolBufferException e) {
             //log.info(e);
             msg = MessageBuilder.buildErrorResponse("InvalidProtocolBufferException");
