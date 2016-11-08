@@ -245,6 +245,12 @@ final class DataNode {
       e.printStackTrace();
       throw e;
     }
+
+    //log.info("r {}", r);
+    if(r != MessageBuilder.nullMsg) {
+      JettyTransport.reply(context, r);
+    }
+
     return r;
     //log.info("r {}", r);
     //if(r != MessageBuilder.nullMsg) {
