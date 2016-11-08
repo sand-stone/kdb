@@ -28,6 +28,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 public final class Client implements Closeable {
   private static Logger log = LogManager.getLogger(Client.class);
   HttpClient client;
+  int timeout;
   private String uri;
   private String table;
   private String token;
@@ -94,6 +95,9 @@ public final class Client implements Closeable {
   public Client(String uri, String table, int timeout) {
     try {
       client = new HttpClient();
+      this.timeout = timeout;
+      client.setConnectTimeout(timeout);
+      client.setIdleTimeout(timeout);
       client.start();
     } catch(Exception e) {
       throw new KdbException(e);
@@ -204,6 +208,7 @@ public final class Client implements Closeable {
       ContentResponse r;
       r = client.POST(uri)
         .content(new BytesContentProvider(msg.toByteArray()))
+        .timeout(timeout, TimeUnit.MILLISECONDS)
         .send();
       byte[] data = r.getContent();
       rsp = Message.parseFrom(data);
