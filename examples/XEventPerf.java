@@ -32,7 +32,7 @@ public class XEventPerf {
     public Writer(int id) {
       this.id  = id;
       rnd = new Random();
-      batchSize = 5000;
+      batchSize = 100;
     }
 
     private void bucketid(ByteBuffer buf) {
@@ -64,17 +64,17 @@ public class XEventPerf {
       List<byte[]> keys = new ArrayList<byte[]>();
       List<byte[]> values = new ArrayList<byte[]>();
       int batch = 0;
+      long t1 = System.nanoTime();
       try(Client client = new Client(uris[0], table)) {
         while(!stop) {
           genData(keys, values);
-          long t1 = System.nanoTime();
           Client.Result rsp = client.append(keys, values);
           long t2 = System.nanoTime();
           keys.clear();
           values.clear();
           batch++;
-          if(batch%100 == 0)
-            System.out.printf("writer %d, %d events takes %e seconds, total %d \n", id, batchSize, (t2-t1)/1e9, batch*batchSize);
+          if(batch%10000 == 0)
+            System.out.printf("writer %d, per event takes %e seconds, total %e \n", id, batch*batchSize/(t2-t1)/1e9, batch*batchSize);
         }
       }
       System.out.printf("writer %d inserted %d events\n", id, batch*batchSize);
