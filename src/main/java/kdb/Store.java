@@ -266,7 +266,7 @@ public class Store implements Closeable {
   }
 
   public Message get(Context ctx, Message msg) {
-    Message r = MessageBuilder.nullMsg;
+    Message r = MessageBuilder.emptyMsg;
     byte[] key, value;
     SearchStatus status;
     assert msg.getType() == MessageType.Get;
@@ -282,12 +282,10 @@ public class Store implements Closeable {
       case Between:
         if(ctx.bound != null) {
           r = buildrange(ctx, msg.getGetOp().getLimit(), msg.getGetOp().getCount());
-        } else
-          r = MessageBuilder.emptyMsg;
+        }
         break;
       case Done:
         ctx.done = true;
-        r = MessageBuilder.emptyMsg;
         break;
       }
       return r;

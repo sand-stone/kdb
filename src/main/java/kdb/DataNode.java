@@ -200,6 +200,7 @@ final class DataNode {
         }
         break;
       case Get:
+        r = MessageBuilder.emptyMsg;
         String token = msg.getGetOp().getToken();
         //log.info("token <{}> ", token);
         if(token.equals("")) {
@@ -208,13 +209,11 @@ final class DataNode {
           if(table != null && table.length() > 0)
             ctx = store.getContext(table);
           else {
-            r = MessageBuilder.emptyMsg;
             break;
           }
         } else {
           ctx = ctxs.get(token);
           if(ctx == null) {
-            r = MessageBuilder.emptyMsg;
             break;
           }
         }
