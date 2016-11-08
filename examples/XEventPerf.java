@@ -140,9 +140,11 @@ public class XEventPerf {
           bucketid(key, 0, 0);
           Client.Result rsp = client.get(Client.QueryType.GreaterEqual, key.array(), 500);
           count = rsp.count();
-          while(rsp.token().length() > 0) {
-            rsp = client.get(Client.QueryType.GreaterEqual, rsp.token(), 500);
-            count += rsp.count();
+          if(count > 0) {
+            while(rsp.token().length() > 0) {
+              rsp = client.get(Client.QueryType.GreaterEqual, rsp.token(), 500);
+              count += rsp.count();
+            }
           }
         }
         long t2 = System.nanoTime();
