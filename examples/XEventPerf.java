@@ -32,7 +32,7 @@ public class XEventPerf {
     public Writer(int id) {
       this.id  = id;
       rnd = new Random();
-      batchSize = 100;
+      batchSize = 500;
     }
 
     private void bucketid(ByteBuffer buf) {
@@ -73,7 +73,7 @@ public class XEventPerf {
           keys.clear();
           values.clear();
           batch++;
-          if(batch%100 == 0)
+          if(batch%1000 == 0)
             System.out.printf("writer %d, total %d events takes %e seconds, rate %e \n", id, batch*batchSize,
                               (t2-t1)/1e9, batch*batchSize/((t2-t1)/1e9));
         }
@@ -122,9 +122,11 @@ public class XEventPerf {
 
   public static class Counter implements Runnable  {
     String uri;
+    Random rnd;
 
     public Counter(String uri) {
       this.uri = uri;
+      this.rnd = new Random();
     }
 
     private void bucketid(ByteBuffer buf, int hour, int minute) {
@@ -134,7 +136,7 @@ public class XEventPerf {
 
     public void run() {
       while (true) {
-        int count = 0;
+        int count = 0, valsize = 0;
         long t1 = System.nanoTime();
         try (Client client = new Client(uri, table)) {
           ByteBuffer key = ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN);
@@ -142,6 +144,7 @@ public class XEventPerf {
           Client.Result rsp = client.get(Client.QueryType.GreaterEqual, key.array(), 500);
           count = rsp.count();
           if(count > 0) {
+            valsize = rsp.getValue(rnd.nextInt(count)).length;
             while(rsp.token().length() > 0) {
               rsp = client.get(Client.QueryType.GreaterEqual, rsp.token(), 500);
               count += rsp.count();
@@ -149,7 +152,7 @@ public class XEventPerf {
           }
         }
         long t2 = System.nanoTime();
-        System.out.printf("total # msg %d scanned in %e seconds %e rate \n", count, (t2-t1)/1e9, 1.0*count/((t2-t1)/1e9));
+        System.out.printf("total # msg %d sample size %d scanned in %e seconds %e rate \n", count, valsize, (t2-t1)/1e9, 1.0*count/((t2-t1)/1e9));
       }
     }
   }
