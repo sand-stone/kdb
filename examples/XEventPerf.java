@@ -148,7 +148,7 @@ public class XEventPerf {
           }
         }
         long t2 = System.nanoTime();
-        System.out.printf("total # msg %d scanned in %e seconds %e rate \n", count, (t2-t1)/1e9, 1.0*count/(t2-t1)/1e9);
+        System.out.printf("total # msg %d scanned in %e seconds %e rate \n", count, (t2-t1)/1e9, 1.0*count/((t2-t1)/1e9));
       }
     }
   }
