@@ -160,6 +160,19 @@ final class DataNode {
     return rings.get(rnd.nextInt(rings.size()));
   }
 
+  private void rsend(Message msg, Object ctx) {
+    while(true) {
+      try {
+        ring().zab.send(ByteBuffer.wrap(msg.toByteArray()), ctx);
+        return;
+      } catch(ZabException.InvalidPhase e) {
+        log.debug(e);
+      } catch(ZabException.TooManyPendingRequests e) {
+        log.debug(e);
+      }
+    }
+  }
+
   public Message process(Message msg, Object context) throws ZabException.TooManyPendingRequests, ZabException.InvalidPhase {
     Message r = MessageBuilder.nullMsg;
     try {
@@ -173,7 +186,7 @@ final class DataNode {
         if(standalone) {
           r = store.create(table);
         } else {
-          ring().zab.send(ByteBuffer.wrap(msg.toByteArray()), context);
+          rsend(msg, context);
         }
         break;
       case Drop:
@@ -183,7 +196,7 @@ final class DataNode {
         if(standalone) {
           r = store.drop(table);
         } else {
-          ring().zab.send(ByteBuffer.wrap(msg.toByteArray()), context);
+          rsend(msg, context);
         }
         break;
       case Get:
@@ -225,7 +238,7 @@ final class DataNode {
             r = store.insert(c, msg);
           }
         } else {
-          ring().zab.send(ByteBuffer.wrap(msg.toByteArray()), context);
+          rsend(msg, context);
         }
         break;
       case Update:
@@ -236,7 +249,7 @@ final class DataNode {
             r = store.update(c, msg);
           }
         } else {
-          ring().zab.send(ByteBuffer.wrap(msg.toByteArray()), context);
+          rsend(msg, context);
         }
         break;
       }
