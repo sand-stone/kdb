@@ -65,18 +65,18 @@ public class XEventPerf {
       List<byte[]> values = new ArrayList<byte[]>();
       int batch = 0;
       long t1 = System.nanoTime();
-      while(!stop) {
-        genData(keys, values);
-        try(Client client = new Client(uris[0], table)) {
+      try(Client client = new Client(uris[0], table)) {
+        while(!stop) {
+          genData(keys, values);
           Client.Result rsp = client.append(keys, values);
+          long t2 = System.nanoTime();
+          keys.clear();
+          values.clear();
+          batch++;
+          if(batch%100 == 0)
+            System.out.printf("writer %d, total %d events takes %e seconds, rate %e \n", id, batch*batchSize,
+                              (t2-t1)/1e9, batch*batchSize/((t2-t1)/1e9));
         }
-        long t2 = System.nanoTime();
-        keys.clear();
-        values.clear();
-        batch++;
-        if(batch%100 == 0)
-          System.out.printf("writer %d, total %d events takes %e seconds, rate %e \n", id, batch*batchSize,
-                            (t2-t1)/1e9, batch*batchSize/((t2-t1)/1e9));
       }
       System.out.printf("writer %d inserted %d events\n", id, batch*batchSize);
     }
