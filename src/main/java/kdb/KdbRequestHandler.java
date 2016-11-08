@@ -40,9 +40,9 @@ final class KdbRequestHandler extends HttpServlet {
   @Override
   protected void doPost(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
-    AsyncContext context = request.startAsync(request, response);
     // remove the leading slash from the request path and use that as the key.
     int length = request.getContentLength();
+    AsyncContext context = request.startAsync();
     if (length <= 0) {
       // Don't accept requests without content length.
       response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -59,6 +59,12 @@ final class KdbRequestHandler extends HttpServlet {
         break;
       off += count;
     } while(true);
+    if(off!= length) {
+      response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+      response.setContentLength(0);
+      context.complete();
+      return;
+    }
     Message msg = null;
     try {
       msg = Message.parseFrom(value);
