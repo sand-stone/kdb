@@ -207,19 +207,21 @@ public final class Client implements Closeable {
         .send();
       byte[] data = r.getContent();
       rsp = Message.parseFrom(data);
-      //log.info("rsp: {}", rsp);
     } catch(InterruptedException e) {
-      log.info(e);
-      e.printStackTrace();
+      log.debug(e);
+      //e.printStackTrace();
     } catch(ExecutionException e) {
-      log.info(e);
-      e.printStackTrace();
+      log.debug(e);
+      throw new KdbException(e);
+      //e.printStackTrace();
     } catch(TimeoutException e) {
-      log.info(e);
-      e.printStackTrace();
+      log.debug(e);
+      throw new KdbException(e);
+      //e.printStackTrace();
     } catch(InvalidProtocolBufferException e) {
-      log.info(e);
-      e.printStackTrace();
+      log.debug(e);
+      throw new KdbException(e);
+      //e.printStackTrace();
     }
     return rsp;
   }
