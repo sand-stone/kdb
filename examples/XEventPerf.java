@@ -148,7 +148,7 @@ public class XEventPerf {
           }
         }
         long t2 = System.nanoTime();
-        System.out.printf("total # msg %d scanned in %e seconds \n", count, (t2-t1)/1e9);
+        System.out.printf("total # msg %d scanned in %e seconds %e rate \n", count, (t2-t1)/1e9, count/(t2-t1)/1e9);
       }
     }
   }
@@ -167,7 +167,7 @@ public class XEventPerf {
 
     Client.createTable(uris[0], table);
 
-    int nw = 10;
+    int nw = 5;
     for (int i = 0; i < nw; i++) {
       new Thread(new Writer(i)).start();
     }
@@ -176,12 +176,12 @@ public class XEventPerf {
 
     try {Thread.currentThread().sleep(5000);} catch(Exception ex) {}
 
-    int nr = 10;
+    int nr = 2;
 
     for (int i = 0; i < nr; i++) {
       new Thread(new Counter(uris[1])).start();
       new Thread(new Counter(uris[2])).start();
-      //new Thread(new Counter(uris[0])).start();
+      new Thread(new Counter(uris[0])).start();
     }
 
     try {Thread.currentThread().sleep(60*60*1000);} catch(Exception ex) {}
