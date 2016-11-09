@@ -170,7 +170,7 @@ final class DataNode {
     }
   }
 
-  public void process(Message msg, Object context) {
+  public Message process(Message msg, Object context) {
     Message r = MessageBuilder.nullMsg;
     String table;
     Store.Context ctx;
@@ -248,9 +248,10 @@ final class DataNode {
       }
       break;
     }
-    if(r != MessageBuilder.nullMsg) {
+    /*if(r != MessageBuilder.nullMsg) {
       JettyTransport.reply(context, r);
-    }
+      }*/
+    return r;
   }
 
 }

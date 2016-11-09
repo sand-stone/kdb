@@ -13,6 +13,7 @@ import kdb.rsm.ZabException;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.gson.GsonBuilder;
 import com.google.gson.Gson;
+import java.io.OutputStream;
 
 final class KdbRequestHandler extends HttpServlet {
   private static final Logger log = LogManager.getLogger(KdbRequestHandler.class);
@@ -37,17 +38,31 @@ final class KdbRequestHandler extends HttpServlet {
     response.getOutputStream().write(value.getBytes());
   }
 
+  private void reply(HttpServletResponse response, Message msg) {
+    try {
+      OutputStream os =response.getOutputStream();
+      os.write(msg.toByteArray());
+    } catch(IOException e) {
+      log.info(e);
+    } catch (IllegalStateException e) {
+      log.info(e);
+    } finally {
+      response.setContentType("application/octet-stream");
+      response.setStatus(HttpServletResponse.SC_OK);
+    }
+  }
+
   @Override
   protected void doPost(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
     // remove the leading slash from the request path and use that as the key.
     int length = request.getContentLength();
-    AsyncContext context = request.startAsync();
+    //AsyncContext context = request.startAsync();
     if (length <= 0) {
       // Don't accept requests without content length.
       response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
       response.setContentLength(0);
-      context.complete();
+      //context.complete();
       return;
     }
     byte[] value = new byte[length];
@@ -62,7 +77,7 @@ final class KdbRequestHandler extends HttpServlet {
     if(off!= length) {
       response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
       response.setContentLength(0);
-      context.complete();
+      //context.complete();
       return;
     }
     Message msg = null;
@@ -70,7 +85,7 @@ final class KdbRequestHandler extends HttpServlet {
       msg = Message.parseFrom(value);
       value = null;
       //log.info("msg input {}", msg);
-      db.process(msg, context);
+      reply(response, db.process(msg, null));
       return;
     } catch(InvalidProtocolBufferException e) {
       //e.printStackTrace();
@@ -83,7 +98,7 @@ final class KdbRequestHandler extends HttpServlet {
     }
     response.setContentType("text/html");
     response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-    context.complete();
+    //context.complete();
   }
 
 }
