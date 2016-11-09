@@ -26,7 +26,7 @@ public class Store implements Closeable {
   private static Logger log = LogManager.getLogger(Store.class);
   private Connection conn;
   private String db;
-  private static final String dbconfig = "create,";
+  private static final String dbconfig = "create,session_max=5000,cache_size=1GB,eviction=(threads_max=2,threads_min=2),lsm_manager=(merge=true,worker_thread_max=3),checkpoint=(log_size=2GB,wait=300)";
   ConcurrentHashMap<String, AtomicInteger> tables;
 
   public Store(String location) {
