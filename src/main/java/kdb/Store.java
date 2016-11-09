@@ -129,6 +129,7 @@ public class Store implements Closeable {
     int len = op.getKeysCount();
     if(len != op.getValuesCount())
       throw new RuntimeException("wrong length");
+    //log.info("insert {}", msg);
     for(int i = 0; i < len; i++) {
       ctx.cursor.putKeyByteArray(op.getKeys(i).toByteArray());
       ctx.cursor.putValueByteArray(op.getValues(i).toByteArray());

@@ -86,6 +86,7 @@ public class NettyTransport {
     boolean standalone = config.getBoolean("standalone", false);
     Store store = new Store(config.getString("store"));
     DataNode datanode = new DataNode(configRings(config, standalone, store), store, standalone);
+    //DataNode datanode = new DataNode(null, store, standalone);
 
     EventLoopGroup bossGroup = new NioEventLoopGroup(1);
     EventLoopGroup workerGroup = new NioEventLoopGroup();
@@ -209,7 +210,7 @@ public class NettyTransport {
         p.addLast(sslCtx.newHandler(ch.alloc()));
       }
       p.addLast(new HttpServerCodec());
-      p.addLast("aggregator", new HttpObjectAggregator(165536));
+      p.addLast("aggregator", new HttpObjectAggregator(10000000));
       p.addLast(new HttpKdbServerHandler(datanode));
     }
   }

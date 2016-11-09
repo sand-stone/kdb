@@ -28,7 +28,7 @@ public class HelloWorld {
       boolean s = false;
       do {
         try {
-          try(Client client = new Client("http://localhost:8002", table)) {
+          try(Client client = new Client("http://localhost:8000", table)) {
             Client.Result r = client.get(Client.QueryType.GreaterEqual, "key".getBytes(), 100);
             System.out.println("r :" + r);
             s = true;

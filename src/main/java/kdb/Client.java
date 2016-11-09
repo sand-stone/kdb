@@ -210,6 +210,7 @@ public final class Client implements Closeable {
         .content(new BytesContentProvider(msg.toByteArray()))
         .timeout(timeout, TimeUnit.MILLISECONDS)
         .send();
+      //log.info("r:{}", r.getReason());
       byte[] data = r.getContent();
       rsp = Message.parseFrom(data);
     } catch(InterruptedException e) {
