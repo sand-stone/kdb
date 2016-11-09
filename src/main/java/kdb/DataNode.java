@@ -161,104 +161,93 @@ final class DataNode {
   }
 
   private void rsend(Message msg, Object ctx) {
-    while(true) {
-      try {
-        ring().zab.send(ByteBuffer.wrap(msg.toByteArray()), ctx);
-        return;
-      } catch(ZabException.InvalidPhase e) {
-        log.debug(e);
-      } catch(ZabException.TooManyPendingRequests e) {
-        log.debug(e);
-      }
+    try {
+      ring().zab.send(ByteBuffer.wrap(msg.toByteArray()), ctx);
+    } catch(ZabException.InvalidPhase e) {
+      throw new KdbException(e);
+    } catch(ZabException.TooManyPendingRequests e) {
+      throw new KdbException(e);
     }
   }
 
-  public void process(Message msg, Object context) throws ZabException.TooManyPendingRequests, ZabException.InvalidPhase {
+  public void process(Message msg, Object context) {
     Message r = MessageBuilder.nullMsg;
-    try {
-      String table;
-      Store.Context ctx;
-      //log.info("msg {} context {} standalone {}", msg, context, standalone);
-      switch(msg.getType()) {
-      case Create:
-        table = msg.getCreateOp().getTable();
-        countCreate(table);
-        if(standalone) {
-          r = store.create(table);
-        } else {
-          rsend(msg, context);
-        }
-        break;
-      case Drop:
-        //log.info("msg {} context {}", msg, context);
-        table = msg.getDropOp().getTable();
-        countDrop(table);
-        if(standalone) {
-          r = store.drop(table);
-        } else {
-          rsend(msg, context);
-        }
-        break;
-      case Get:
-        r = MessageBuilder.emptyMsg;
-        String token = msg.getGetOp().getToken();
-        //log.info("token <{}> ", token);
-        if(token.equals("")) {
-          table = msg.getGetOp().getTable();
-          countGet(table);
-          if(table != null && table.length() > 0)
-            ctx = store.getContext(table);
-          else {
-            break;
-          }
-        } else {
-          ctx = ctxs.get(token);
-          if(ctx == null) {
-            break;
-          }
-        }
-        try {
-          countGet(ctx.table);
-          r = store.get(ctx, msg);
-        } finally {
-          if(ctx.done) {
-            ctxs.remove(ctx.token());
-            ctx.close();
-          } else {
-            ctxs.putIfAbsent(ctx.token(), ctx);
-          }
-        }
-        break;
-      case Insert:
-        table = msg.getInsertOp().getTable();
-        countInsert(table);
-        if(standalone) {
-          try(Store.Context c = store.getContext(table)) {
-            r = store.insert(c, msg);
-          }
-        } else {
-          rsend(msg, context);
-        }
-        break;
-      case Update:
-        table = msg.getUpdateOp().getTable();
-        countUpdate(table);
-        if(standalone) {
-          try(Store.Context c = store.getContext(table)) {
-            r = store.update(c, msg);
-          }
-        } else {
-          rsend(msg, context);
-        }
-        break;
+    String table;
+    Store.Context ctx;
+    //log.info("msg {} context {} standalone {}", msg, context, standalone);
+    switch(msg.getType()) {
+    case Create:
+      table = msg.getCreateOp().getTable();
+      countCreate(table);
+      if(standalone) {
+        r = store.create(table);
+      } else {
+        rsend(msg, context);
       }
-    } catch(Exception e) {
-      //log.info(e);
-      e.printStackTrace();
-      throw e;
+      break;
+    case Drop:
+      //log.info("msg {} context {}", msg, context);
+      table = msg.getDropOp().getTable();
+      countDrop(table);
+      if(standalone) {
+        r = store.drop(table);
+      } else {
+        rsend(msg, context);
+      }
+      break;
+    case Get:
+      r = MessageBuilder.emptyMsg;
+      String token = msg.getGetOp().getToken();
+      //log.info("token <{}> ", token);
+      if(token.equals("")) {
+        table = msg.getGetOp().getTable();
+        countGet(table);
+        if(table != null && table.length() > 0)
+          ctx = store.getContext(table);
+        else {
+          break;
+        }
+      } else {
+        ctx = ctxs.get(token);
+        if(ctx == null) {
+          break;
+        }
+      }
+      try {
+        countGet(ctx.table);
+        r = store.get(ctx, msg);
+      } finally {
+        if(ctx.done) {
+          ctxs.remove(ctx.token());
+          ctx.close();
+        } else {
+          ctxs.putIfAbsent(ctx.token(), ctx);
+        }
+      }
+      break;
+    case Insert:
+      table = msg.getInsertOp().getTable();
+      countInsert(table);
+      if(standalone) {
+        try(Store.Context c = store.getContext(table)) {
+          r = store.insert(c, msg);
+        }
+      } else {
+        rsend(msg, context);
+      }
+      break;
+    case Update:
+      table = msg.getUpdateOp().getTable();
+      countUpdate(table);
+      if(standalone) {
+        try(Store.Context c = store.getContext(table)) {
+          r = store.update(c, msg);
+        }
+      } else {
+        rsend(msg, context);
+      }
+      break;
     }
-
-    //log.info("r {}", r);
     if(r != MessageBuilder.nullMsg) {
       JettyTransport.reply(context, r);
     }
