@@ -108,7 +108,8 @@ class Ring implements Runnable, StateMachine {
     log.info("Recovering...");
     Message msg = MessageBuilder.buildErrorResponse("Service Error");
     for (Tuple tp : pendingRequests.pendingSends) {
-      JettyTransport.reply(tp.param, msg);
+      if(tp.param instanceof javax.servlet.AsyncContext)
+        JettyTransport.reply(tp.param, msg);
     }
   }
 
