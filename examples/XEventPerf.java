@@ -43,6 +43,10 @@ public class XEventPerf {
       buf.put((byte)rnd.nextInt(12)); //every hour 12 buckets, each bucket is 5 mins
     }
 
+    private void eventid(ByteBuffer buf) {
+      buf.put((byte)rnd.nextInt(255)); //0-254 # of event streams
+    }
+
     private void deviceid(ByteBuffer buf) {
       UUID guid = deviceIds[rnd.nextInt(deviceIds.length)];
       buf.putLong(guid.getMostSignificantBits()).putLong(guid.getLeastSignificantBits());
@@ -50,8 +54,8 @@ public class XEventPerf {
 
     private void genData(List<byte[]> keys, List<byte[]> values) {
       for (int i = 0; i < batchSize; i++) {
-        ByteBuffer key = ByteBuffer.allocate(18).order(ByteOrder.BIG_ENDIAN);
-        bucketid(key); deviceid(key);
+        ByteBuffer key = ByteBuffer.allocate(19).order(ByteOrder.BIG_ENDIAN);
+        bucketid(key); deviceid(key); eventid(key);
         keys.add(key.array());
         //values.add(("[value#"+id+"#]").getBytes());
         byte[] payload = new byte[1228/*1024*1.2*/];
@@ -68,7 +72,7 @@ public class XEventPerf {
       try(Client client = new Client(uris[0], table)) {
         while(!stop) {
           genData(keys, values);
-          Client.Result rsp = client.append(keys, values);
+          Client.Result rsp = client.update(keys, values);
           long t2 = System.nanoTime();
           keys.clear();
           values.clear();
