@@ -248,9 +248,9 @@ final class DataNode {
       }
       break;
     }
-    /*if(r != MessageBuilder.nullMsg) {
-      JettyTransport.reply(context, r);
-      }*/
+    if(r != MessageBuilder.nullMsg) {
+      NettyTransport.HttpKdbServerHandler.reply(context, r);
+    }
     return r;
   }
 

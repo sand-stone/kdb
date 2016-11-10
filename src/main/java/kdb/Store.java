@@ -92,7 +92,7 @@ public class Store implements Closeable {
       //log.info("{} table already existed", table);
       return MessageBuilder.buildResponse("table already existed:" + table);
     }
-
+    //log.info("create {}", table);
     Session session = conn.open_session(null);
     int r = session.create("table:"+table, "(type=lsm,key_format=u,value_format=u)");
     if(r == 0)

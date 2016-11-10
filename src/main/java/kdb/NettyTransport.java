@@ -95,7 +95,7 @@ public class NettyTransport {
       b.option(ChannelOption.SO_BACKLOG, 1024);
       b.group(bossGroup, workerGroup)
         .channel(NioServerSocketChannel.class)
-        .handler(new LoggingHandler(LogLevel.INFO))
+        //.handler(new LoggingHandler(LogLevel.INFO))
         .childHandler(new HttpKdbServerInitializer(sslCtx, datanode));
 
       Channel ch = b.bind(port).sync().channel();
@@ -109,8 +109,6 @@ public class NettyTransport {
   }
 
   public static class HttpKdbServerHandler extends ChannelInboundHandlerAdapter {
-    private static final byte[] Ping = { 'H', 'e', 'l', 'l', 'o', ' ', 'K', 'd', 'b'};
-
     private static final AsciiString CONTENT_TYPE = new AsciiString("Content-Type");
     private static final AsciiString CONTENT_LENGTH = new AsciiString("Content-Length");
     private static final AsciiString CONNECTION = new AsciiString("Connection");
@@ -127,16 +125,22 @@ public class NettyTransport {
     }
 
     public static void reply(Object ctx, Message msg) {
-      log.info("ctx {}", ctx);
+      //log.info("**** ctx {}", ctx);
       ChannelHandlerContext context = (ChannelHandlerContext)ctx;
+      if (context == null) {
+        // This request is sent from other instance.
+        return;
+      }
       FullHttpResponse response;
       response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.wrappedBuffer(msg.toByteArray()));
       response.headers().set(CONTENT_TYPE, "application/octet-stream");
       response.headers().setInt(CONTENT_LENGTH, response.content().readableBytes());
-      response.headers().set(CONNECTION, KEEP_ALIVE);
-      context.write(response).addListener(ChannelFutureListener.CLOSE);;
-      log.info("****");
+      //response.headers().set(CONNECTION, KEEP_ALIVE);
+      //context.write(response).addListener(ChannelFutureListener.CLOSE);;
+      context.writeAndFlush(response);
     }
+
+
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object data) {
@@ -146,18 +150,19 @@ public class NettyTransport {
         if (HttpUtil.is100ContinueExpected(req)) {
           ctx.write(new DefaultFullHttpResponse(HTTP_1_1, CONTINUE));
         }
+        Message msg = MessageBuilder.emptyMsg;
         //log.info("req method {}", req.method());
         //log.info("req method {}", req.uri());
         if(req.getMethod() == HttpMethod.POST) {
           FullHttpMessage m = (FullHttpMessage) data;
-          Message msg;
           ByteBuf buf = null;
           try {
             buf = m.content();
             byte[] bytes = new byte[buf.readableBytes()];
             buf.readBytes(bytes);
             msg = Message.parseFrom(bytes);
-            msg = datanode.process(msg, ctx);
+            datanode.process(msg, ctx);
+            return;
           } catch(InvalidProtocolBufferException e) {
             //log.info(e);
             msg = MessageBuilder.buildErrorResponse("InvalidProtocolBufferException");
@@ -168,14 +173,13 @@ public class NettyTransport {
             if(buf != null)
               buf.release();
           }
-          response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.wrappedBuffer(msg.toByteArray()));
-          response.headers().set(CONTENT_TYPE, "application/octet-stream");
-          response.headers().setInt(CONTENT_LENGTH, response.content().readableBytes());
-        } else {
-          response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.wrappedBuffer(Ping));
-          response.headers().set(CONTENT_TYPE, "text/plain");
-          response.headers().setInt(CONTENT_LENGTH, response.content().readableBytes());
+          //response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.wrappedBuffer(msg.toByteArray()));
+          //response.headers().set(CONTENT_TYPE, "application/octet-stream");
+          //response.headers().setInt(CONTENT_LENGTH, response.content().readableBytes());
         }
+        response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.wrappedBuffer(Unpooled.wrappedBuffer(msg.toByteArray())));
+        response.headers().set(CONTENT_TYPE, "application/octet-stream");
+        response.headers().setInt(CONTENT_LENGTH, response.content().readableBytes());
         boolean keepAlive = HttpUtil.isKeepAlive(req);
         if (!keepAlive) {
           ctx.write(response).addListener(ChannelFutureListener.CLOSE);

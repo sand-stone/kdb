@@ -68,13 +68,14 @@ class Ring implements Runnable, StateMachine {
   @Override
   public void deliver(Zxid zxid, ByteBuffer stateUpdate, String clientId,
                       Object ctx) {
+    //log.info("deliver {}, {}", stateUpdate, ctx);
     Message msg = MessageBuilder.nullMsg;
     try {
       msg = store.handle(stateUpdate);
     } catch(IOException e) {
       log.info("deliver callback handle {}", e);
     } finally {
-      JettyTransport.reply(ctx, msg);
+      NettyTransport.HttpKdbServerHandler.reply(ctx, msg);
     }
   }
 
@@ -108,8 +109,8 @@ class Ring implements Runnable, StateMachine {
     log.info("Recovering...");
     Message msg = MessageBuilder.buildErrorResponse("Service Error");
     for (Tuple tp : pendingRequests.pendingSends) {
-      if(tp.param instanceof javax.servlet.AsyncContext)
-        JettyTransport.reply(tp.param, msg);
+      //if(tp.param instanceof javax.servlet.AsyncContext)
+        NettyTransport.HttpKdbServerHandler.reply(tp.param, msg);
     }
   }
 
