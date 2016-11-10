@@ -163,7 +163,7 @@ public class KdbIntegrationTest extends TestCase {
     //log.info("drop table");
   }
 
-  /*public void test7() {
+  public void test7() {
     int c = 2;
 
     while(c-->0) {
@@ -173,32 +173,55 @@ public class KdbIntegrationTest extends TestCase {
         int count = 10;
         List<byte[]> keys = new ArrayList<byte[]>();
         List<byte[]> values = new ArrayList<byte[]>();
+
+        UUID guid1 = UUID.randomUUID();
+        UUID guid2 = UUID.randomUUID();
+
         for (int i = 0; i < count; i++) {
-          keys.add(("key"+i).getBytes());
+          ByteBuffer key = ByteBuffer.allocate(18).order(ByteOrder.BIG_ENDIAN);
+          key.put((byte)0);
+          key.putLong(guid1.getMostSignificantBits()).putLong(guid1.getLeastSignificantBits());
+          key.put((byte)i);
+          keys.add(key.array());
           values.add(("value"+i).getBytes());
         }
-        client.append(keys, values);
-        client.append(keys, values);
+        client.update(keys, values);
 
         keys.clear();
         values.clear();
 
-        for (int i = 0; i < count/2; i++) {
-          keys.add(("key"+i).getBytes());
+        for (int i = 0; i < count; i++) {
+          ByteBuffer key = ByteBuffer.allocate(18).order(ByteOrder.BIG_ENDIAN);
+          key.put((byte)1);
+          key.putLong(guid2.getMostSignificantBits()).putLong(guid2.getLeastSignificantBits());
+          key.put((byte)i);
+          keys.add(key.array());
           values.add(("value"+i).getBytes());
         }
-        client.append(keys, values);
-        Client.Result rsp = client.get("key0".getBytes(), "key999".getBytes(), 10, 3);
+        client.update(keys, values);
+
+        keys.clear();
+        values.clear();
+
+        //ByteBuffer key = ByteBuffer.allocate().order(ByteOrder.BIG_ENDIAN);
+        Client.Result rsp = client.get(new byte[]{0}, new byte[]{1}, 100);
+        assertTrue(rsp.count() == 10);
+
+        ByteBuffer key1 = ByteBuffer.allocate(18).order(ByteOrder.BIG_ENDIAN);
+        key1.put((byte)1);
+        key1.putLong(guid2.getMostSignificantBits()).putLong(guid2.getLeastSignificantBits());
+        key1.put((byte)0);
+        ByteBuffer key2 = ByteBuffer.allocate(18).order(ByteOrder.BIG_ENDIAN);
+        key2.put((byte)1);
+        key2.putLong(guid2.getMostSignificantBits()).putLong(guid2.getLeastSignificantBits());
+        key2.put((byte)10);
+        rsp = client.get(key1.array(), key2.array(), 100);
         //log.info("msg {} ==> {} ", rsp, rsp.count());
-        if(rsp.count() == 5) {
-          assertTrue(true);
-        } else {
-          assertTrue(false);
-        }
+        assertTrue(rsp.count() == 10);
       }
       Client.dropTable("http://localhost:8001/", table);
     }
-    }*/
+  }
 
   public void test8() {
     int count = 10;
