@@ -188,14 +188,10 @@
             <includes>
               <include>wiredtiger:wiredtiger</include>
               <include>com.google.guava:guava</include>
-              <include>org.eclipse.jetty:jetty-server</include>
               <include>org.eclipse.jetty:jetty-client</include>
-              <include>org.eclipse.jetty:jetty-servlet</include>
               <include>org.eclipse.jetty:jetty-util</include>
               <include>org.eclipse.jetty:jetty-http</include>
               <include>org.eclipse.jetty:jetty-io</include>
-              <include>org.eclipse.jetty:jetty-client</include>
-              <include>javax.servlet:javax.servlet-api</include>
               <include>com.google.code.gson:gson</include>
               <include>org.slf4j:slf4j-api</include>
               <include>org.slf4j:slf4j-simple</include>
@@ -334,11 +330,6 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-server</artifactId>
-      <version>9.4.0.RC1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
       <version>9.4.0.RC1</version>
     </dependency>
@@ -361,16 +352,6 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-io</artifactId>
       <version>9.4.0.RC1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-client</artifactId>
-      <version>9.4.0.RC1</version>
-    </dependency>
-    <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>javax.servlet-api</artifactId>
-      <version>3.1.0</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
