@@ -170,7 +170,7 @@ final class DataNode {
     }
   }
 
-  public Message process(Message msg, Object context) {
+  public void process(Message msg, Object context) {
     Message r = MessageBuilder.nullMsg;
     String table;
     Store.Context ctx;
@@ -251,7 +251,6 @@ final class DataNode {
     if(r != MessageBuilder.nullMsg) {
       NettyTransport.HttpKdbServerHandler.reply(context, r);
     }
-    return r;
   }
 
 }
