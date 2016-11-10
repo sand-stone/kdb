@@ -106,7 +106,7 @@
                 <argument>-Djava.library.path=./libs/linux</argument>
                 <argument>-cp</argument>
                 <argument>${basedir}/target/kdb-${project.version}.jar</argument>
-                <argument>kdb.JettyTransport</argument>
+                <argument>kdb.NettyTransport</argument>
                 <argument>${basedir}/conf/datanode1.properties</argument>
               </arguments>
             </configuration>
@@ -127,7 +127,7 @@
                 <argument>-Djava.library.path=./libs/linux</argument>
                 <argument>-cp</argument>
                 <argument>${basedir}/target/kdb-${project.version}.jar</argument>
-                <argument>kdb.JettyTransport</argument>
+                <argument>kdb.NettyTransport</argument>
                 <argument>${basedir}/conf/datanode2.properties</argument>
               </arguments>
             </configuration>
@@ -148,7 +148,7 @@
                 <argument>-Djava.library.path=./libs/linux</argument>
                 <argument>-cp</argument>
                 <argument>${basedir}/target/kdb-${project.version}.jar</argument>
-                <argument>kdb.JettyTransport</argument>
+                <argument>kdb.NettyTransport</argument>
                 <argument>${basedir}/conf/datanode3.properties</argument>
               </arguments>
             </configuration>
