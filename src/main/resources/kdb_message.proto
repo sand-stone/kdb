@@ -47,13 +47,16 @@ message GetOperation {
     LessEqual = 2;
     Between = 3;
     Done = 4;
+    NotEqual = 5;
   }
+
   Type op = 1;
   string table = 2;
   string token = 3;
   int32 limit = 4;
   bytes key = 5;
   bytes key2 = 6;
+  string table2 = 7;
 }
 
 message InsertOperation {

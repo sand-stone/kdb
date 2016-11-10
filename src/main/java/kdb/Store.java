@@ -221,6 +221,12 @@ public class Store implements Closeable {
     return MessageBuilder.buildResponse(ctx.done? "" : ctx.token(), keys, values);
   }
 
+  private Message asof(Message msg) {
+    Message r = MessageBuilder.emptyMsg;
+
+    return r;
+  }
+
   public Message get(Context ctx, Message msg) {
     Message r = MessageBuilder.emptyMsg;
     byte[] key, value;
@@ -243,8 +249,14 @@ public class Store implements Closeable {
       case Done:
         ctx.done = true;
         break;
+      default:
+        r = asof(msg);
+        break;
       }
       return r;
+    }
+    if(msg.getGetOp().getTable2().length() > 0) {
+       return asof(msg);
     }
     ctx.cursor.reset();
     switch(msg.getGetOp().getOp()) {

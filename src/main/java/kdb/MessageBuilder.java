@@ -172,4 +172,16 @@ final class MessageBuilder {
     return Message.newBuilder().setType(MessageType.Get).setGetOp(op).build();
   }
 
+  public static Message buildAsofOp(String table, String table2, GetOperation.Type opt, byte[] key, int limit) {
+    GetOperation op = GetOperation
+      .newBuilder()
+      .setTable(table)
+      .setTable2(table2)
+      .setOp(opt)
+      .setKey(ByteString.copyFrom(key))
+      .setLimit(limit)
+      .build();
+    return Message.newBuilder().setType(MessageType.Get).setGetOp(op).build();
+  }
+
 }
