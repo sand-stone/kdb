@@ -42,6 +42,8 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import kdb.rsm.ZabException;
 import java.util.List;
 import java.util.ArrayList;
+import com.google.gson.GsonBuilder;
+import com.google.gson.Gson;
 
 public class NettyTransport {
   private static Logger log = LogManager.getLogger(NettyTransport.class);
@@ -140,8 +142,6 @@ public class NettyTransport {
       context.writeAndFlush(response);
     }
 
-
-
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object data) {
       if (data instanceof HttpRequest) {
@@ -173,13 +173,17 @@ public class NettyTransport {
             if(buf != null)
               buf.release();
           }
-          //response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.wrappedBuffer(msg.toByteArray()));
-          //response.headers().set(CONTENT_TYPE, "application/octet-stream");
-          //response.headers().setInt(CONTENT_LENGTH, response.content().readableBytes());
+          response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.wrappedBuffer(Unpooled.wrappedBuffer(msg.toByteArray())));
+          response.headers().set(CONTENT_TYPE, "application/octet-stream");
+          response.headers().setInt(CONTENT_LENGTH, response.content().readableBytes());
+        } else {
+          GsonBuilder builder = new GsonBuilder();
+          Gson gson = builder.create();
+          String value = gson.toJson(datanode.stats());
+          response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.wrappedBuffer(Unpooled.wrappedBuffer(value.getBytes())));
+          response.headers().set(CONTENT_TYPE, "text/json");
+          response.headers().setInt(CONTENT_LENGTH, value.length());
         }
-        response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.wrappedBuffer(Unpooled.wrappedBuffer(msg.toByteArray())));
-        response.headers().set(CONTENT_TYPE, "application/octet-stream");
-        response.headers().setInt(CONTENT_LENGTH, response.content().readableBytes());
         boolean keepAlive = HttpUtil.isKeepAlive(req);
         if (!keepAlive) {
           ctx.write(response).addListener(ChannelFutureListener.CLOSE);
@@ -221,7 +225,7 @@ public class NettyTransport {
 
   public static void main(String[] args) throws Exception {
     if(args.length < 1) {
-      System.out.println("java -cp ./target/kdb-1.0-SNAPSHOT.jar kdb.HttpTransport conf/datanode.properties");
+      System.out.println("java -cp ./target/kdb-1.0-SNAPSHOT.jar kdb.NettyTransport conf/datanode.properties");
       return;
     }
     File propertiesFile = new File(args[0]);
