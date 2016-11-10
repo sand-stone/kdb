@@ -112,10 +112,6 @@ final class MessageBuilder {
     return Message.newBuilder().setType(MessageType.Insert).setInsertOp(op).build();
   }
 
-  public static Message buildUpdateOp(String table, List<byte[]> keys, List<byte[]> values) {
-    return buildUpdateOp(table, keys, values, false);
-  }
-
   public static Message buildUpdateOp(String table, List<byte[]> keys) {
     UpdateOperation op = UpdateOperation
       .newBuilder()
@@ -125,11 +121,10 @@ final class MessageBuilder {
     return Message.newBuilder().setType(MessageType.Update).setUpdateOp(op).build();
   }
 
-  public static Message buildUpdateOp(String table, List<byte[]> keys, List<byte[]> values, boolean overwrite) {
+  public static Message buildUpdateOp(String table, List<byte[]> keys, List<byte[]> values) {
     UpdateOperation op = UpdateOperation
       .newBuilder()
       .setTable(table)
-      .setOverwrite(overwrite)
       .addAllKeys(keys.stream().map(k -> ByteString.copyFrom(k)).collect(toList()))
       .addAllValues(values.stream().map(v -> ByteString.copyFrom(v)).collect(toList()))
       .build();
@@ -166,10 +161,6 @@ final class MessageBuilder {
   }
 
   public static Message buildGetOp(String table, byte[] key, byte[] key2, int limit) {
-    return buildGetOp(table, key, key2, limit, -1);
-  }
-
-  public static Message buildGetOp(String table, byte[] key, byte[] key2, int limit, int count) {
     GetOperation op = GetOperation
       .newBuilder()
       .setTable(table)
@@ -177,7 +168,6 @@ final class MessageBuilder {
       .setKey(ByteString.copyFrom(key))
       .setKey2(ByteString.copyFrom(key2))
       .setLimit(limit)
-      .setCount(count)
       .build();
     return Message.newBuilder().setType(MessageType.Get).setGetOp(op).build();
   }

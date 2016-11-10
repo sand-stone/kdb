@@ -136,13 +136,8 @@ public final class Client implements Closeable {
     return new Result(msg.getResponse());
   }
 
-  public Result replace(List<byte[]> keys, List<byte[]> values) {
-    Message msg = sendMsg(MessageBuilder.buildUpdateOp(table, keys, values, true));
-    return new Result(msg.getResponse());
-  }
-
-  public Result append(List<byte[]> keys, List<byte[]> values) {
-    Message msg = sendMsg(MessageBuilder.buildUpdateOp(table, keys, values, false));
+  public Result update(List<byte[]> keys, List<byte[]> values) {
+    Message msg = sendMsg(MessageBuilder.buildUpdateOp(table, keys, values));
     return new Result(msg.getResponse());
   }
 
@@ -193,11 +188,7 @@ public final class Client implements Closeable {
   }
 
   public Result get(byte[] key1, byte[] key2, int limit) {
-    return get(key1, key2, limit, -1);
-  }
-
-  public Result get(byte[] key1, byte[] key2, int limit, int count) {
-    Message msg = sendMsg(MessageBuilder.buildGetOp(table, key1, key2, limit, count));
+    Message msg = sendMsg(MessageBuilder.buildGetOp(table, key1, key2, limit));
     token = msg.getResponse().getToken();
     return new Result(msg.getResponse());
   }

@@ -165,39 +165,10 @@ public class Store implements Closeable {
         ctx.cursor.reset();
         counter.clear();
       }
-      return MessageBuilder.buildResponse("updated");
-    }
-
-    if(msg.getUpdateOp().getOverwrite()) {
+    } else {
       for(int i = 0; i < len; i++) {
         ctx.cursor.putKeyByteArray(op.getKeys(i).toByteArray());
         ctx.cursor.putValueByteArray(op.getValues(i).toByteArray());
-        ctx.cursor.update();
-        ctx.cursor.reset();
-      }
-    } else {
-      ByteBuffer counter = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN);
-      for(int i = 0; i < len; i++) {
-        ctx.cursor.putKeyByteArray(op.getKeys(i).toByteArray());
-        if(ctx.cursor.search() == 0) {
-          byte[] oldv = ctx.cursor.getValueByteArray();
-          counter.put(oldv, 0, 4);
-          counter.flip();
-          byte[] newv = ByteBuffer.allocate(oldv.length+op.getValues(i).size())
-            .order(ByteOrder.BIG_ENDIAN)
-            .putInt(counter.getInt() + 1)
-            .put(oldv, 4, oldv.length - 4)
-            .put(op.getValues(i).toByteArray())
-            .array();
-          ctx.cursor.putValueByteArray(newv);
-          counter.clear();
-        } else {
-          byte[] v = op.getValues(i).toByteArray();
-          ByteBuffer buf = ByteBuffer.allocate(v.length+4).order(ByteOrder.BIG_ENDIAN);
-          buf.putInt(1).put(v);
-          ctx.cursor.putValueByteArray(buf.array());
-        }
-        ctx.cursor.putKeyByteArray(op.getKeys(i).toByteArray());
         ctx.cursor.update();
         ctx.cursor.reset();
       }
@@ -234,33 +205,17 @@ public class Store implements Closeable {
     return MessageBuilder.buildResponse(ctx.done? "" : ctx.token(), keys, values);
   }
 
-  private Message buildrange(Context ctx, int limit, int count) {
+  private Message buildrange(Context ctx, int limit) {
     byte[] key, value;
     List<byte[]> keys = new ArrayList<byte[]>();
     List<byte[]> values = new ArrayList<byte[]>();
-    if(count == -1) {
-      while(--limit>0 && ctx.cursor.next() == 0) {
-        key = ctx.cursor.getKeyByteArray();
-        if(Utils.memcmp(key, ctx.bound) > 0)
-          break;
-        value = ctx.cursor.getValueByteArray();
-        keys.add(key);
-        values.add(value);
-      }
-    } else {
-      ByteBuffer counter = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN);
-      while(--limit>0 && ctx.cursor.next() == 0) {
-        key = ctx.cursor.getKeyByteArray();
-        if(Utils.memcmp(key, ctx.bound) > 0)
-          break;
-        value = ctx.cursor.getValueByteArray();
-        counter.put(value, 0, 4);
-        if(counter.getInt() >= count) {
-          keys.add(key);
-          values.add(value);
-        }
-        counter.clear();
-      }
+    while(--limit>0 && ctx.cursor.next() == 0) {
+      key = ctx.cursor.getKeyByteArray();
+      if(Utils.memcmp(key, ctx.bound) > 0)
+        break;
+      value = ctx.cursor.getValueByteArray();
+      keys.add(key);
+      values.add(value);
     }
     ctx.done = limit != 0? true : false;
     return MessageBuilder.buildResponse(ctx.done? "" : ctx.token(), keys, values);
@@ -282,7 +237,7 @@ public class Store implements Closeable {
         break;
       case Between:
         if(ctx.bound != null) {
-          r = buildrange(ctx, msg.getGetOp().getLimit(), msg.getGetOp().getCount());
+          r = buildrange(ctx, msg.getGetOp().getLimit());
         }
         break;
       case Done:
@@ -316,32 +271,14 @@ public class Store implements Closeable {
           List<byte[]> keys = new ArrayList<byte[]>();
           List<byte[]> values = new ArrayList<byte[]>();
           byte[] k2 = msg.getGetOp().getKey2().toByteArray();
-          int count = msg.getGetOp().getCount();
-          if(count == -1) {
-            do {
-              key = ctx.cursor.getKeyByteArray();
-              if(Utils.memcmp(key, k2) > 0)
-                break;
-              value = ctx.cursor.getValueByteArray();
-              keys.add(key);
-              values.add(value);
-            } while(--limit>0 && ctx.cursor.next() == 0);
-          } else {
-            ByteBuffer counter = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN);
-            do {
-              key = ctx.cursor.getKeyByteArray();
-              if(Utils.memcmp(key, k2) > 0)
-                break;
-              value = ctx.cursor.getValueByteArray();
-              counter.put(value, 0, 4);
-              counter.flip();
-              if(counter.getInt() >= count) {
-                keys.add(key);
-                values.add(value);
-              }
-              counter.clear();
-            } while(--limit>0 && ctx.cursor.next() == 0);
-          }
+          do {
+            key = ctx.cursor.getKeyByteArray();
+            if(Utils.memcmp(key, k2) > 0)
+              break;
+            value = ctx.cursor.getValueByteArray();
+            keys.add(key);
+            values.add(value);
+          } while(--limit>0 && ctx.cursor.next() == 0);
           ctx.done = limit != 0? true : false;
           ctx.bound = k2;
           r = MessageBuilder.buildResponse(ctx.done? "" : ctx.token(), keys, values);
