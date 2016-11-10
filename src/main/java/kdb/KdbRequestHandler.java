@@ -38,31 +38,17 @@ final class KdbRequestHandler extends HttpServlet {
     response.getOutputStream().write(value.getBytes());
   }
 
-  private void reply(HttpServletResponse response, Message msg) {
-    try {
-      OutputStream os =response.getOutputStream();
-      os.write(msg.toByteArray());
-    } catch(IOException e) {
-      log.info(e);
-    } catch (IllegalStateException e) {
-      log.info(e);
-    } finally {
-      response.setContentType("application/octet-stream");
-      response.setStatus(HttpServletResponse.SC_OK);
-    }
-  }
-
   @Override
   protected void doPost(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
     // remove the leading slash from the request path and use that as the key.
     int length = request.getContentLength();
-    //AsyncContext context = request.startAsync();
+    AsyncContext context = request.startAsync();
     if (length <= 0) {
       // Don't accept requests without content length.
       response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
       response.setContentLength(0);
-      //context.complete();
+      context.complete();
       return;
     }
     byte[] value = new byte[length];
@@ -75,17 +61,17 @@ final class KdbRequestHandler extends HttpServlet {
       off += count;
     } while(true);
     if(off!= length) {
+      log.info("wrong content");
       response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
       response.setContentLength(0);
-      //context.complete();
+      context.complete();
       return;
     }
     Message msg = null;
     try {
       msg = Message.parseFrom(value);
       value = null;
-      //log.info("msg input {}", msg);
-      reply(response, db.process(msg, null));
+      db.process(msg, context);
       return;
     } catch(InvalidProtocolBufferException e) {
       //e.printStackTrace();
