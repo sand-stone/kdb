@@ -47,7 +47,6 @@ message GetOperation {
     LessEqual = 2;
     Between = 3;
     Done = 4;
-    NotEqual = 5;
   }
 
   Type op = 1;
@@ -56,7 +55,6 @@ message GetOperation {
   int32 limit = 4;
   bytes key = 5;
   bytes key2 = 6;
-  string table2 = 7;
 }
 
 message InsertOperation {

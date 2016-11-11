@@ -69,4 +69,22 @@ class Utils {
     return a.length - b.length;
   }
 
+  public static int memcmp(final byte[] a, final byte[] b, int length) {
+    for (int i = 0; i < length; i++) {
+      if (a[i] != b[i]) {
+        return (a[i] & 0xFF) - (b[i] & 0xFF);
+      }
+    }
+    return 0;
+  }
+
+  public static int memcmp(final byte[] a, final byte[] b, int off, int length) {
+    for (int i = 0; i < length; i++) {
+      if (a[i] != b[i+off]) {
+        return (a[i] & 0xFF) - (b[i+off] & 0xFF);
+      }
+    }
+    return 0;
+  }
+
 }

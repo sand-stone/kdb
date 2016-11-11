@@ -193,18 +193,6 @@ public final class Client implements Closeable {
     return new Result(msg.getResponse());
   }
 
-  public Result asof(byte[] key, String table, int limit) {
-    Message msg = sendMsg(MessageBuilder.buildAsofOp(this.table, table, GetOperation.Type.Equal, key, limit));
-    token = msg.getResponse().getToken();
-    return new Result(msg.getResponse());
-  }
-
-  public Result invasof(byte[] key, String table, int limit) {
-    Message msg = sendMsg(MessageBuilder.buildAsofOp(this.table, table, GetOperation.Type.NotEqual, key, limit));
-    token = msg.getResponse().getToken();
-    return new Result(msg.getResponse());
-  }
-
   private Message sendMsg(Message msg) {
     Message rsp = MessageBuilder.nullMsg;
     try {
