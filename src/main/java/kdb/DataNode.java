@@ -160,9 +160,9 @@ final class DataNode {
     return rings.get(rnd.nextInt(rings.size()));
   }
 
-  private void rsend(Message msg, Object ctx) {
+  private void rsend(Ring ring, Message msg, Object ctx) {
     try {
-      ring().zab.send(ByteBuffer.wrap(msg.toByteArray()), ctx);
+      ring.zab.send(ByteBuffer.wrap(msg.toByteArray()), ctx);
     } catch(ZabException.InvalidPhase e) {
       throw new KdbException(e);
     } catch(ZabException.TooManyPendingRequests e) {
@@ -174,6 +174,7 @@ final class DataNode {
     Message r = MessageBuilder.nullMsg;
     String table;
     Store.Context ctx;
+    Ring ring = ring();
     //log.info("msg {} context {} standalone {}", msg, context, standalone);
     switch(msg.getType()) {
     case Create:
@@ -182,7 +183,7 @@ final class DataNode {
       if(standalone) {
         r = store.create(table);
       } else {
-        rsend(msg, context);
+        rsend(ring, msg, context);
       }
       break;
     case Drop:
@@ -192,8 +193,12 @@ final class DataNode {
       if(standalone) {
         r = store.drop(table);
       } else {
-        rsend(msg, context);
+        rsend(ring, msg, context);
       }
+      break;
+    case Log:
+      log.info("log msg {} context {}", msg, context);
+      r = MessageBuilder.buildResponse("process log");
       break;
     case Get:
       r = MessageBuilder.emptyMsg;
@@ -228,23 +233,22 @@ final class DataNode {
     case Insert:
       table = msg.getInsertOp().getTable();
       countInsert(table);
-      if(standalone) {
-        try(Store.Context c = store.getContext(table)) {
-          r = store.insert(c, msg);
-        }
-      } else {
-        rsend(msg, context);
+      try(Store.Context c = store.getContext(table)) {
+        c.mark(ring.lastZxid.getEpoch(), ring.lastZxid.getXid());
+        r = store.insert(c, msg);
+      }
+      if(!standalone) {
+        rsend(ring, MessageBuilder.buildLogOp(NettyTransport.get().uri(), table, ring.lastZxid.getEpoch(), ring.lastZxid.getXid()), context);
       }
       break;
     case Update:
       table = msg.getUpdateOp().getTable();
       countUpdate(table);
-      if(standalone) {
-        try(Store.Context c = store.getContext(table)) {
-          r = store.update(c, msg);
-        }
-      } else {
-        rsend(msg, context);
+      try(Store.Context c = store.getContext(table)) {
+        r = store.update(c, msg);
+      }
+      if(!standalone) {
+        rsend(ring, MessageBuilder.buildLogOp(NettyTransport.get().uri(), table, ring.lastZxid.getEpoch(), ring.lastZxid.getXid()), context);
       }
       break;
     }

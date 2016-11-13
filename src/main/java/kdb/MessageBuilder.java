@@ -14,6 +14,7 @@ import kdb.proto.XMessage.UpdateOperation;
 import kdb.proto.XMessage.GetOperation;
 import kdb.proto.XMessage.CreateOperation;
 import kdb.proto.XMessage.DropOperation;
+import kdb.proto.XMessage.LogOperation;
 import kdb.proto.XMessage.Response;
 
 final class MessageBuilder {
@@ -172,4 +173,27 @@ final class MessageBuilder {
     return Message.newBuilder().setType(MessageType.Get).setGetOp(op).build();
   }
 
+  public static Message buildLogOp(Message msg, long epoch, long xid, int file, long offset) {
+    LogOperation op = LogOperation
+      .newBuilder()
+      .setEpoch(epoch)
+      .setXid(xid)
+      .setLsnfile(file)
+      .setLsnoffset(offset)
+      .setUri(msg.getLogOp().getUri())
+      .setTable(msg.getLogOp().getTable())
+      .build();
+    return Message.newBuilder().setType(MessageType.Log).setLogOp(op).build();
+  }
+
+  public static Message buildLogOp(String uri, String table, long epoch, long xid) {
+    LogOperation op = LogOperation
+      .newBuilder()
+      .setEpoch(epoch)
+      .setXid(xid)
+      .setUri(uri)
+      .setTable(table)
+      .build();
+    return Message.newBuilder().setType(MessageType.Log).setLogOp(op).build();
+  }
 }

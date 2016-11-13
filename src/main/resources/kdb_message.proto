@@ -15,6 +15,7 @@ message Message {
     Create = 4;
     Drop = 5;
     Response = 6;
+    Log = 7;
   }
 
   MessageType type = 1;
@@ -25,6 +26,7 @@ message Message {
   CreateOperation createOp = 6;
   DropOperation dropOp = 7;
   Response response = 8;
+  LogOperation logOp = 9;
 }
 
 message Response {
@@ -32,12 +34,15 @@ message Response {
     OK = 0;
     Error = 1;
     Retry = 2;
+    Log = 3;
   }
   Type type = 1;
   string reason = 2;
   string token = 3;
-  repeated bytes keys = 4;
-  repeated bytes values = 5;
+  int32 lsnfile = 4;
+  int32 lsnoffset = 5;
+  repeated bytes keys = 6;
+  repeated bytes values = 7;
 }
 
 message GetOperation {
@@ -80,4 +85,13 @@ message CreateOperation {
 
 message DropOperation {
   string table = 1;
+}
+
+message LogOperation {
+  int64 epoch = 1;
+  int64 xid = 2;
+  int32 lsnfile = 3;
+  int64 lsnoffset = 4;
+  string uri = 5;
+  string table = 6;
 }

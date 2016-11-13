@@ -168,8 +168,8 @@ public class KdbIntegrationTest extends TestCase {
 
     while(c-->0) {
       String table = "test7";
-      Client.createTable("http://localhost:8001/", table);
-      try (Client client = new Client("http://localhost:8001/", table)) {
+      Client.createTable("http://localhost:8000/", table);
+      try (Client client = new Client("http://localhost:8000/", table)) {
         int count = 10;
         List<byte[]> keys = new ArrayList<byte[]>();
         List<byte[]> values = new ArrayList<byte[]>();
@@ -219,7 +219,7 @@ public class KdbIntegrationTest extends TestCase {
         //log.info("msg {} ==> {} ", rsp, rsp.count());
         assertTrue(rsp.count() == 10);
       }
-      Client.dropTable("http://localhost:8001/", table);
+      Client.dropTable("http://localhost:8000/", table);
     }
   }
 

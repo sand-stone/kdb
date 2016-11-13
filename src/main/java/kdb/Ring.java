@@ -18,6 +18,7 @@ import kdb.rsm.ZabConfig;
 import kdb.rsm.ZabException;
 import kdb.rsm.Zxid;
 import kdb.proto.XMessage.Message;
+import kdb.proto.XMessage.Message.MessageType;
 
 class Ring implements Runnable, StateMachine {
   private static Logger log = LogManager.getLogger(Ring.class);
@@ -27,6 +28,7 @@ class Ring implements Runnable, StateMachine {
   Store store;
 
   public Zab zab;
+  public Zxid lastZxid;
 
   public Ring(String serverId, String joinPeer, String logDir) {
     try {
@@ -48,7 +50,7 @@ class Ring implements Runnable, StateMachine {
         zab = new Zab(this, config);
       }
       this.serverId = zab.getServerId();
-
+      lastZxid = new Zxid(0, 0);
     } catch (Exception ex) {
       log.error("Caught exception : ", ex);
       throw new RuntimeException();
@@ -68,14 +70,33 @@ class Ring implements Runnable, StateMachine {
   @Override
   public void deliver(Zxid zxid, ByteBuffer stateUpdate, String clientId,
                       Object ctx) {
-    //log.info("deliver {}, {}", stateUpdate, ctx);
+    lastZxid = zxid;
+    //log.info("deliver zxid {} clientid {} {}, {}", zxid, clientId, stateUpdate, ctx);
     Message msg = MessageBuilder.nullMsg;
+    boolean logOp = false;
     try {
-      msg = store.handle(stateUpdate);
+      byte[] arr = new byte[stateUpdate.remaining()];
+      stateUpdate.get(arr);
+      Message inputmsg = Message.parseFrom(arr);
+      logOp = inputmsg.getType() == MessageType.Log;
+      if(!logOp)
+        msg = store.handle(inputmsg);
+      else {
+        if(ctx != null) {
+          log.info("primary marking {}", lastZxid);
+          try(Store.Context c = store.getContext(inputmsg.getLogOp().getTable())) {
+            c.mark(lastZxid.getEpoch(), lastZxid.getXid());
+          }
+          //store.simple_walk_log();
+        } else {
+          store.getRepl().addLogReq(inputmsg, lastZxid.getEpoch(), lastZxid.getXid());
+        }
+      }
     } catch(IOException e) {
       log.info("deliver callback handle {}", e);
     } finally {
-      NettyTransport.HttpKdbServerHandler.reply(ctx, msg);
+      if(!logOp)
+        NettyTransport.HttpKdbServerHandler.reply(ctx, msg);
     }
   }
 
@@ -110,7 +131,7 @@ class Ring implements Runnable, StateMachine {
     Message msg = MessageBuilder.buildErrorResponse("Service Error");
     for (Tuple tp : pendingRequests.pendingSends) {
       //if(tp.param instanceof javax.servlet.AsyncContext)
-        NettyTransport.HttpKdbServerHandler.reply(tp.param, msg);
+      NettyTransport.HttpKdbServerHandler.reply(tp.param, msg);
     }
   }
 

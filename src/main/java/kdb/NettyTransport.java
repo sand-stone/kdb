@@ -48,7 +48,22 @@ import com.google.gson.Gson;
 public class NettyTransport {
   private static Logger log = LogManager.getLogger(NettyTransport.class);
 
-  public NettyTransport() { }
+  int port;
+  String host;
+
+  String uri;
+
+  static NettyTransport instance = new NettyTransport();
+
+  private NettyTransport() { }
+
+  public static NettyTransport get() {
+    return instance;
+  }
+
+  public String uri() {
+    return uri;
+  }
 
   static List<Ring> configRings(PropertiesConfiguration config, boolean standalone, Store store) {
     List ringaddrs = config.getList("ringaddr");
@@ -71,7 +86,9 @@ public class NettyTransport {
   }
 
   public void start(PropertiesConfiguration config) {
-    int port = config.getInt("port");
+    port = config.getInt("port");
+    host = config.getString("host", "localhost");
+    uri = "http://"+host+":"+port;
     boolean SSL = config.getBoolean("ssl", false);
     final SslContext sslCtx;
     if (SSL) {
@@ -100,7 +117,7 @@ public class NettyTransport {
         //.handler(new LoggingHandler(LogLevel.INFO))
         .childHandler(new HttpKdbServerInitializer(sslCtx, datanode));
 
-      Channel ch = b.bind(port).sync().channel();
+      Channel ch = b.bind(host, port).sync().channel();
       ch.closeFuture().sync();
     } catch(Exception e) {
       throw new KdbException(e);
@@ -127,7 +144,7 @@ public class NettyTransport {
     }
 
     public static void reply(Object ctx, Message msg) {
-      //log.info("**** ctx {}", ctx);
+      log.info("**** ctx {} msg {}", ctx, msg);
       ChannelHandlerContext context = (ChannelHandlerContext)ctx;
       if (context == null) {
         // This request is sent from other instance.
@@ -236,6 +253,6 @@ public class NettyTransport {
     Configurations configs = new Configurations();
     PropertiesConfiguration config = configs.properties(propertiesFile);
 
-    new NettyTransport().start(config);
+    NettyTransport.get().start(config);
   }
 }

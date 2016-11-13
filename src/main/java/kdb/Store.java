@@ -22,17 +22,20 @@ import kdb.proto.XMessage.UpdateOperation;
 import kdb.proto.XMessage.GetOperation;
 import kdb.proto.XMessage.Message.MessageType;
 
-public class Store implements Closeable {
+class Store implements Closeable {
   private static Logger log = LogManager.getLogger(Store.class);
   private Connection conn;
   private String db;
-  private static final String dbconfig = "create,session_max=1000,cache_size=1GB,eviction=(threads_max=2,threads_min=2),lsm_manager=(merge=true,worker_thread_max=5),checkpoint=(log_size=1GB,wait=3000)";
+  private static final String dbconfig = "create,session_max=1000,cache_size=1GB,log=(archive=false,enabled=true),eviction=(threads_max=2,threads_min=2),lsm_manager=(merge=true,worker_thread_max=5),checkpoint=(log_size=1GB,wait=3000)";
   ConcurrentHashMap<String, AtomicInteger> tables;
+  private Replicator repl;
 
   public Store(String location) {
     Utils.checkDir(location);
     conn = wiredtiger.open(location, dbconfig);
     tables = new ConcurrentHashMap<String, AtomicInteger>();
+    repl = new Replicator(this);
+    new Thread(repl).start();
   }
 
   public class Context implements Closeable {
@@ -51,6 +54,7 @@ public class Store implements Closeable {
         throw new KdbException("too many sessions");
       }
       session = Store.this.conn.open_session(null);
+      //log.info("context for table <{}>", table);
       cursor = session.open_cursor("table:"+table, null, null);
       if(tables.get(table) == null) {
         tables.putIfAbsent(table, new AtomicInteger());
@@ -72,6 +76,10 @@ public class Store implements Closeable {
       return done;
     }
 
+    public void mark(long epoch, long zxid) {
+      session.log_printf("mark " + epoch + "-" + zxid);
+    }
+
     public void close() {
       cursor.close();
       session.close(null);
@@ -84,6 +92,14 @@ public class Store implements Closeable {
 
   public Context getContext(String table) {
     return new Context(table);
+  }
+
+  public Replicator getRepl() {
+    return repl;
+  }
+
+  public Message getLog(Message log) {
+    return null;
   }
 
   public Message create(String table) {
@@ -331,10 +347,7 @@ public class Store implements Closeable {
     return r;
   }
 
-  public Message handle(ByteBuffer data) throws IOException {
-    byte[] arr = new byte[data.remaining()];
-    data.get(arr);
-    Message msg = Message.parseFrom(arr);
+  public Message handle(Message msg) throws IOException {
     //log.info("handle {}", msg);
     if(msg.getType() == MessageType.Insert) {
       String table = msg.getInsertOp().getTable();
@@ -358,6 +371,74 @@ public class Store implements Closeable {
 
   public void close() {
     conn.close(null);
+  }
+
+  static class Lsn {
+    int file;
+    long offset;
+  }
+
+  static void print_record(Lsn lsn, int opcount,
+                           int rectype, int optype, long txnid, int fileid,
+                           byte[] key, byte[] value)
+  {
+    System.out.print(
+                     "LSN [" + lsn.file + "][" + lsn.offset + "]." + opcount +
+                     ": record type " + rectype + " optype " + optype +
+                     " txnid " + txnid + " fileid " + fileid);
+    System.out.println(" key size " + key.length +
+                       " value size " + value.length);
+    if (rectype == wiredtiger.WT_LOGREC_MESSAGE)
+      System.out.println("Application Record: " + new String(value));
+  }
+
+  void simple_walk_log() {
+    try {
+      Session session = conn.open_session(null);
+
+      Cursor cursor;
+      Lsn lsn = new Lsn();
+      byte[] logrec_key, logrec_value;
+      long txnid;
+      int fileid, opcount, optype, rectype;
+      int ret;
+
+      /*! [log cursor open] */
+      cursor = session.open_cursor("log:", null, null);
+      /*! [log cursor open] */
+
+      while ((ret = cursor.next()) == 0) {
+        /*! [log cursor get_key] */
+        lsn.file = cursor.getKeyInt();
+        lsn.offset = cursor.getKeyLong();
+        opcount = cursor.getKeyInt();
+        /*! [log cursor get_key] */
+        /*! [log cursor get_value] */
+        txnid = cursor.getValueLong();
+        rectype = cursor.getValueInt();
+        optype = cursor.getValueInt();
+        fileid = cursor.getValueInt();
+        logrec_key = cursor.getValueByteArray();
+        logrec_value = cursor.getValueByteArray();
+        /*! [log cursor get_value] */
+        if (rectype == wiredtiger.WT_LOGREC_COMMIT &&
+            optype == wiredtiger.WT_LOGOP_ROW_PUT) {
+          print_record(lsn, opcount,
+                       rectype, optype, txnid, fileid, logrec_key, logrec_value);
+        } else if(rectype == wiredtiger.WT_LOGREC_MESSAGE) {
+          System.out.println("<<<<app");
+          print_record(lsn, opcount,
+                       rectype, optype, txnid, fileid, logrec_key, logrec_value);
+          System.out.println("app>>>>>");
+        }
+      }
+      if (ret == wiredtiger.WT_NOTFOUND)
+        ret = 0;
+      ret = cursor.close();
+    } catch (Exception e) {
+      e.printStackTrace();
+      log.info(e);
+    }
   }
 
 }
