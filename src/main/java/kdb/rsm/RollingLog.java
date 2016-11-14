@@ -89,7 +89,7 @@ class RollingLog implements Log {
                  file.getName());
       }
     }
-    logFiles.subList(count, logFiles.size());
+    logFiles.subList(0, count).clear();
   }
 
   /**
