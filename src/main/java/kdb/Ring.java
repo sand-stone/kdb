@@ -106,12 +106,13 @@ class Ring implements Runnable, StateMachine {
 
   @Override
   public void recovering(PendingRequests pendingRequests) {
-    log.info("Recovering...");
+    log.info("<<<Recovering ... pending sizes {}", pendingRequests.pendingSends.size());
     Message msg = MessageBuilder.buildErrorResponse("Service Error");
     for (Tuple tp : pendingRequests.pendingSends) {
-      //if(tp.param instanceof javax.servlet.AsyncContext)
+      if(tp.param instanceof io.netty.channel.ChannelHandlerContext)
         NettyTransport.HttpKdbServerHandler.reply(tp.param, msg);
     }
+    log.info("... Recovering>>>");
   }
 
   @Override
