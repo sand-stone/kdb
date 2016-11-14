@@ -11,10 +11,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.commons.configuration2.*;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.BytesContentProvider;
-//import org.asynchttpclient.*;
+import org.asynchttpclient.*;
 import java.util.concurrent.Future;
 
 import kdb.proto.XMessage.Message;
@@ -27,7 +24,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 
 public final class Client implements Closeable {
   private static Logger log = LogManager.getLogger(Client.class);
-  HttpClient client;
+  AsyncHttpClient client;
   int timeout;
   private String uri;
   private String table;
@@ -94,11 +91,8 @@ public final class Client implements Closeable {
 
   public Client(String uri, String table, int timeout) {
     try {
-      client = new HttpClient();
-      this.timeout = timeout;
-      client.setConnectTimeout(timeout);
-      client.setIdleTimeout(timeout);
-      client.start();
+      final AsyncHttpClientConfig config = new DefaultAsyncHttpClientConfig.Builder().setRequestTimeout(timeout).build();
+      client = new DefaultAsyncHttpClient(config);
     } catch(Exception e) {
       throw new KdbException(e);
     }
@@ -196,22 +190,17 @@ public final class Client implements Closeable {
   private Message sendMsg(Message msg) {
     Message rsp = MessageBuilder.nullMsg;
     try {
-      ContentResponse r;
-      r = client.POST(uri)
-        .content(new BytesContentProvider(msg.toByteArray()))
-        .timeout(timeout, TimeUnit.MILLISECONDS)
-        .send();
-      //log.info("r:{}", r.getReason());
-      byte[] data = r.getContent();
+      Response r = client
+        .preparePost(uri)
+        .setBody(msg.toByteArray())
+        .execute()
+        .get();
+      byte[] data = r.getResponseBodyAsBytes();
       rsp = Message.parseFrom(data);
     } catch(InterruptedException e) {
       log.debug(e);
       //e.printStackTrace();
     } catch(ExecutionException e) {
-      log.debug(e);
-      throw new KdbException(e);
-      //e.printStackTrace();
-    } catch(TimeoutException e) {
       log.debug(e);
       throw new KdbException(e);
       //e.printStackTrace();
@@ -234,7 +223,6 @@ public final class Client implements Closeable {
   public void close() {
     try {
       releaseToken();
-      client.stop();
     } catch(Exception e) {}
   }
 
