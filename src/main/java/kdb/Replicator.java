@@ -45,7 +45,7 @@ class Replicator implements Closeable, Runnable {
         }
         Message req = MessageBuilder.buildLogOp(msg, epoch, xid, file, offset);
         replQ.put(req);
-        log.info("enq req {}", msg);
+        log.info("enq req {}", req);
         break;
       } catch (InterruptedException e) {}
     } while(true);
@@ -61,13 +61,19 @@ class Replicator implements Closeable, Runnable {
         msg = replQ.peek();
         if(msg != null) {
           log.info("process req {}", msg);
-          Response response = client
-            .preparePost(msg.getLogOp().getUri())
+          String uri = msg.getLogOp().getUri();
+          Response r = client
+            .preparePost(uri)
             .setBody(msg.toByteArray())
             .execute()
             .get();
-          //byte[] data = r.getResponseBodyAsBytes();
-          log.info("respone {}", response);
+          byte[] data = r.getResponseBodyAsBytes();
+          msg = Message.parseFrom(data);
+          store.applyLog(msg);
+          Store.Lsn lsn = new Store.Lsn();
+          lsn.file = msg.getResponse().getLsnfile();
+          lsn.offset = msg.getResponse().getLsnoffset();
+          lsns.put(uri, lsn);
           replQ.take();
         }
         Thread.yield();

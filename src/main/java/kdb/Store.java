@@ -20,6 +20,8 @@ import kdb.proto.XMessage.Message;
 import kdb.proto.XMessage.InsertOperation;
 import kdb.proto.XMessage.UpdateOperation;
 import kdb.proto.XMessage.GetOperation;
+import kdb.proto.XMessage.LogOperation;
+import kdb.proto.XMessage.Response;
 import kdb.proto.XMessage.Message.MessageType;
 
 class Store implements Closeable {
@@ -77,7 +79,7 @@ class Store implements Closeable {
     }
 
     public void mark(long epoch, long zxid) {
-      session.log_printf("mark " + epoch + "-" + zxid);
+      session.log_printf(epoch + "#" + zxid);
     }
 
     public void close() {
@@ -96,10 +98,6 @@ class Store implements Closeable {
 
   public Replicator getRepl() {
     return repl;
-  }
-
-  public Message getLog(Message log) {
-    return null;
   }
 
   public Message create(String table) {
@@ -152,6 +150,43 @@ class Store implements Closeable {
       ctx.cursor.insert();
     }
     return MessageBuilder.buildResponse("inserted");
+  }
+
+  void logUpdate(Context ctx, Message msg) {
+    assert msg.getType() == MessageType.Response;
+    Response op = msg.getResponse();
+    ctx.cursor.reset();
+    int len = op.getKeysCount();
+    if(len != op.getValuesCount()) {
+      if(op.getValuesCount() != 0) {
+        throw new KdbException("wrong length");
+      }
+      ByteBuffer counter = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN);
+      for(int i = 0; i < len; i++) {
+        ctx.cursor.putKeyByteArray(op.getKeys(i).toByteArray());
+        if(ctx.cursor.search() == 0) {
+          ctx.cursor.getValueByteArray(counter.array(), 0, 4);
+          int c = counter.getInt()+1;
+          counter.clear();
+          counter.putInt(c);
+          ctx.cursor.putValueByteArray(counter.array());
+        } else {
+          counter.putInt(1);
+          ctx.cursor.putValueByteArray(counter.array());
+        }
+        ctx.cursor.putKeyByteArray(op.getKeys(i).toByteArray());
+        ctx.cursor.update();
+        ctx.cursor.reset();
+        counter.clear();
+      }
+    } else {
+      for(int i = 0; i < len; i++) {
+        ctx.cursor.putKeyByteArray(op.getKeys(i).toByteArray());
+        ctx.cursor.putValueByteArray(op.getValues(i).toByteArray());
+        ctx.cursor.update();
+        ctx.cursor.reset();
+      }
+    }
   }
 
   public Message update(Context ctx, Message msg) {
@@ -378,67 +413,85 @@ class Store implements Closeable {
     long offset;
   }
 
-  static void print_record(Lsn lsn, int opcount,
-                           int rectype, int optype, long txnid, int fileid,
-                           byte[] key, byte[] value)
-  {
-    System.out.print(
-                     "LSN [" + lsn.file + "][" + lsn.offset + "]." + opcount +
-                     ": record type " + rectype + " optype " + optype +
-                     " txnid " + txnid + " fileid " + fileid);
-    System.out.println(" key size " + key.length +
-                       " value size " + value.length);
-    if (rectype == wiredtiger.WT_LOGREC_MESSAGE)
-      System.out.println("Application Record: " + new String(value));
+  public void applyLog(Message msg) {
+    log.info("apply {}", msg);
+    assert msg.getType() == MessageType.Response;
+    try(Context ctx = getContext(msg.getResponse().getToken())) {
+      logUpdate(ctx, msg);
+    }
   }
 
-  void simple_walk_log() {
+  public Message getLog(Message req) {
+    List<byte[]> keys = new ArrayList<byte[]>();
+    List<byte[]> values = new ArrayList<byte[]>();
+    int file = 0;
+    long offset = 0;
+    int filesave = 0;
+    long offsetsave = 0;
+
     try {
       Session session = conn.open_session(null);
-
-      Cursor cursor;
-      Lsn lsn = new Lsn();
       byte[] logrec_key, logrec_value;
       long txnid;
       int fileid, opcount, optype, rectype;
-      int ret;
+      int ret = -1;
 
-      /*! [log cursor open] */
-      cursor = session.open_cursor("log:", null, null);
-      /*! [log cursor open] */
+      file = req.getLogOp().getLsnfile();
+      offset = req.getLogOp().getLsnoffset();
 
-      while ((ret = cursor.next()) == 0) {
-        /*! [log cursor get_key] */
-        lsn.file = cursor.getKeyInt();
-        lsn.offset = cursor.getKeyLong();
+      Cursor cursor = session.open_cursor("log:", null, null);
+
+      if(file != 0 || offset != 0) {
+        cursor.putKeyInt(file);
+        cursor.putKeyInt((int)offset);
+        ret = cursor.search();
+      } else
+        ret = cursor.next();
+      log.info("file {} offset {}, ret {}", file, offset, ret);
+      while (ret == 0) {
+        file = cursor.getKeyInt();
+        offset = cursor.getKeyInt();
         opcount = cursor.getKeyInt();
-        /*! [log cursor get_key] */
-        /*! [log cursor get_value] */
         txnid = cursor.getValueLong();
         rectype = cursor.getValueInt();
         optype = cursor.getValueInt();
         fileid = cursor.getValueInt();
-        logrec_key = cursor.getValueByteArray();
-        logrec_value = cursor.getValueByteArray();
-        /*! [log cursor get_value] */
-        if (rectype == wiredtiger.WT_LOGREC_COMMIT &&
-            optype == wiredtiger.WT_LOGOP_ROW_PUT) {
-          print_record(lsn, opcount,
-                       rectype, optype, txnid, fileid, logrec_key, logrec_value);
+        if(fileid > 0) {
+          if (rectype == wiredtiger.WT_LOGREC_COMMIT &&
+              optype == wiredtiger.WT_LOGOP_ROW_PUT) {
+            logrec_key = cursor.getValueByteArray();
+            logrec_value = cursor.getValueByteArray();
+            //log.info("fileid {}, opcount {} rectype {} optype {} key {} value {}", fileid, opcount, rectype, optype, new String(logrec_key), new String(logrec_value));
+            keys.add(logrec_key);
+            values.add(logrec_value);
+            filesave = file;
+            offsetsave = offset;
+            //log.info("** file {} offset {}", file, offset);
+          }
         } else if(rectype == wiredtiger.WT_LOGREC_MESSAGE) {
-          System.out.println("<<<<app");
-          print_record(lsn, opcount,
-                       rectype, optype, txnid, fileid, logrec_key, logrec_value);
-          System.out.println("app>>>>>");
+          logrec_key = cursor.getValueByteArray();
+          logrec_value = cursor.getValueByteArray();
+          String[] marker = new String(logrec_value).split("#");
+          //log.info(" marker {}#{} : req {}#{} ", marker[0], marker[1], req.getLogOp().getEpoch(), req.getLogOp().getXid());
+          long epoch = Long.parseLong(marker[0].trim());
+          long xid = Long.parseLong(marker[1].trim());
+          if(epoch == req.getLogOp().getEpoch() && xid == req.getLogOp().getXid()) {
+            //log.info("ship {} ==> {}", keys, values);
+            //log.info("file {} offset {}", file, offset);
+            break;
+          }
         }
+        ret = cursor.next();
       }
       if (ret == wiredtiger.WT_NOTFOUND)
         ret = 0;
       ret = cursor.close();
+      session.close(null);
     } catch (Exception e) {
       e.printStackTrace();
       log.info(e);
     }
+    return MessageBuilder.buildLogResponse(filesave, offsetsave, req.getLogOp().getTable(), keys, values);
   }
 
 }

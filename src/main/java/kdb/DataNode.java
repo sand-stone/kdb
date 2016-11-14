@@ -198,7 +198,7 @@ final class DataNode {
       break;
     case Log:
       log.info("log msg {} context {}", msg, context);
-      r = MessageBuilder.buildResponse("process log");
+      r = store.getLog(msg);
       break;
     case Get:
       r = MessageBuilder.emptyMsg;

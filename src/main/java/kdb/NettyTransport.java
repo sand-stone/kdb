@@ -105,7 +105,6 @@ public class NettyTransport {
     boolean standalone = config.getBoolean("standalone", false);
     Store store = new Store(config.getString("store"));
     DataNode datanode = new DataNode(configRings(config, standalone, store), store, standalone);
-    //DataNode datanode = new DataNode(null, store, standalone);
 
     EventLoopGroup bossGroup = new NioEventLoopGroup(1);
     EventLoopGroup workerGroup = new NioEventLoopGroup();
@@ -144,7 +143,7 @@ public class NettyTransport {
     }
 
     public static void reply(Object ctx, Message msg) {
-      log.info("**** ctx {} msg {}", ctx, msg);
+      //log.info("**** ctx {} msg {}", ctx, msg);
       ChannelHandlerContext context = (ChannelHandlerContext)ctx;
       if (context == null) {
         // This request is sent from other instance.

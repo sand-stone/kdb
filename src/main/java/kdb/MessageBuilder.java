@@ -87,6 +87,20 @@ final class MessageBuilder {
     return Message.newBuilder().setType(MessageType.Response).setResponse(op).build();
   }
 
+  public static Message buildLogResponse(int file, long offset, String table, List<byte[]> keys, List<byte[]> values) {
+    Response op = Response
+      .newBuilder()
+      .setType(Response.Type.Log)
+      .setLsnfile(file)
+      .setLsnoffset((int)offset)
+      .setReason("OK")
+      .setToken(table)
+      .addAllKeys(keys.stream().map(k -> ByteString.copyFrom(k)).collect(toList()))
+      .addAllValues(values.stream().map(v -> ByteString.copyFrom(v)).collect(toList()))
+      .build();
+    return Message.newBuilder().setType(MessageType.Response).setResponse(op).build();
+  }
+
   public static Message buildCreateOp(String table) {
     CreateOperation op = CreateOperation
       .newBuilder()
