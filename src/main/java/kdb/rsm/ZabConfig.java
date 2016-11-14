@@ -10,9 +10,9 @@ public class ZabConfig {
    * Maximum number of pending requests allowed for each server.
    */
   static final int MAX_PENDING_REQS = 5000;
-  static final long ROLLING_SIZE = 100 * 1024 * 1024;
-  private int timeoutMs = 5000;
-  private int minSyncTimeoutMs = 10000;
+  static final long ROLLING_SIZE = 500 * 1024 * 1024;
+  private int timeoutMs = 2000;
+  private int minSyncTimeoutMs = 5000;
   // The default logDir is current working directory.
   private String logDir = System.getProperty("user.dir");
   private int maxBatchSize = 500;
