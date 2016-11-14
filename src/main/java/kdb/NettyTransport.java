@@ -218,7 +218,7 @@ public class NettyTransport {
         p.addLast(sslCtx.newHandler(ch.alloc()));
       }
       p.addLast(new HttpServerCodec());
-      p.addLast("aggregator", new HttpObjectAggregator(10000000));
+      p.addLast("aggregator", new HttpObjectAggregator(1000000000));
       p.addLast(new HttpKdbServerHandler(datanode));
     }
   }
