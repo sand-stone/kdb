@@ -73,6 +73,25 @@ class RollingLog implements Log {
     }
   }
 
+  private void auto_purge() {
+    int count = 3;
+    if(logFiles.size() < count) {
+      return;
+    }
+
+    for (int i = 0; i < count; ++i) {
+      File file = logFiles.get(i);
+      boolean result = file.delete();
+      if (result) {
+        LOG.info("removed RSM log file {} ", file.getName());
+      } else {
+        LOG.info("The file {} might not be deleted successfully.",
+                 file.getName());
+      }
+    }
+    logFiles.subList(count, logFiles.size());
+  }
+
   /**
    * Appends a request to transaction log.
    *
@@ -87,6 +106,7 @@ class RollingLog implements Log {
       throw new RuntimeException(exStr);
     }
     if (currentLog == null || currentLog.length() >= this.rollingSize) {
+      auto_purge();
       Zxid zxid = txn.getZxid();
       // Close the old one if any.
       this.close();
