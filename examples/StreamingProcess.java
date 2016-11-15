@@ -19,9 +19,11 @@ public class StreamingProcess {
 
   private static UUID[] deviceIds;
 
+  private int numT = 6;
+
   private static void init() {
     //deviceIds = new UUID[150000000];
-    deviceIds = new UUID[15000];
+    deviceIds = new UUID[100000];
     for(int i = 0; i < deviceIds.length; i++) {
       deviceIds[i] = UUID.randomUUID();
     }
@@ -52,14 +54,14 @@ public class StreamingProcess {
       long t1 = System.nanoTime();
       try(Client client = new Client(uris[0], events)) {
         int i = id;
-        for(int j = 0; j < 12; j++) {
-          for (int m = 0; m < deviceIds.length/12; m++) {
-            int deviceid = rnd.nextInt(deviceIds.length);
+        for(int j = 0; j < numT; j++) {
+          for (int m = 0; m < deviceIds.length; m++) {
+            //int deviceid = rnd.nextInt(deviceIds.length);
             for(int k = 0; k < 6; k++) {
               ByteBuffer key = ByteBuffer.allocate(19).order(ByteOrder.BIG_ENDIAN);
               key.put((byte)i);
               key.put((byte)j);
-              UUID guid = deviceIds[deviceid];
+              UUID guid = deviceIds[m];
               key.putLong(guid.getMostSignificantBits()).putLong(guid.getLeastSignificantBits());
               //deviceid(key);
               key.put((byte)k);
@@ -130,12 +132,12 @@ public class StreamingProcess {
       int b1 = id;
       Client statesClient = new Client(uris[0], states);
       try (Client client = new Client(uris[0], events)) {
-        int reprocessing = 30;
+        int reprocessing = 3;
         while(reprocessing-- > 0) {
           int count = 0;
           int scount = 0;
           System.out.println("##### reprocessing "+ reprocessing + " start process bucket:" + b1);
-          for(int b2 = 0; b2 < 12; b2++) {
+          for(int b2 = 0; b2 < numT; b2++) {
             ByteBuffer key1 = ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN);
             key1.put((byte)b1).put((byte)b2);
             ByteBuffer key2 = ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN);
@@ -173,14 +175,14 @@ public class StreamingProcess {
     Client.createTable(uris[0], events);
     Client.createTable(uris[0], states);
 
-    int num = 12;
+    int num = numT;
     for (int i = 0; i < num; i++) {
       new Thread(new EventSource(i)).start();
     }
 
     System.out.println("event source threads");
 
-    try {Thread.currentThread().sleep(10000);} catch(Exception ex) {}
+    try {Thread.currentThread().sleep(5000);} catch(Exception ex) {}
 
     for (int i = 0; i < num; i++) {
       new Thread(new QueryState(i)).start();
