@@ -211,7 +211,7 @@ public class StreamProcessing {
             count += rsp.count();
             process2(rsp);
           }
-          System.out.println("##### bucket " + b1 + ":" + b2 + " count: " + " xcount: " + count*numquery);
+          //System.out.println("##### bucket " + b1 + ":" + b2 + " count: " + " xcount: " + count*numquery);
         }
       }
       System.out.println("##### done process bucket:" + b1);
