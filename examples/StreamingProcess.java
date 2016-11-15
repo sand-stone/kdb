@@ -142,11 +142,11 @@ public class StreamingProcess {
             key1.put((byte)b1).put((byte)b2);
             ByteBuffer key2 = ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN);
             key2.put((byte)(b1)).put((byte)(b2+1));
-            Client.Result rsp = client.get(key1.array(), key2.array(), 1000);
+            Client.Result rsp = client.get(key1.array(), key2.array(), 100);
             count += rsp.count();
             scount += process(statesClient, rsp);
             while(rsp.token().length() > 0) {
-              rsp = client.get(Client.QueryType.Between, rsp.token(), 1000);
+              rsp = client.get(Client.QueryType.Between, rsp.token(), 100);
               count += rsp.count();
               scount += process(statesClient, rsp);
             }
