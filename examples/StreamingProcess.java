@@ -132,7 +132,7 @@ public class StreamingProcess {
       int b1 = id;
       Client statesClient = new Client(uris[0], states);
       try (Client client = new Client(uris[0], events)) {
-        int reprocessing = 3;
+        int reprocessing = 50;
         while(reprocessing-- > 0) {
           int count = 0;
           int scount = 0;
@@ -182,7 +182,7 @@ public class StreamingProcess {
 
     System.out.println("event source threads");
 
-    try {Thread.currentThread().sleep(5000);} catch(Exception ex) {}
+    try {Thread.currentThread().sleep(30000);} catch(Exception ex) {}
 
     for (int i = 0; i < num; i++) {
       new Thread(new QueryState(i)).start();
