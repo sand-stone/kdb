@@ -118,9 +118,9 @@ public class StreamingProcess {
         bits.flip(0, bits.size());
         values.add(bits.toByteArray());
       }
-      //System.out.println("<<<<<" + values.size());
+      System.out.println("<<<<<" + values.size());
       client.update(keys, values);
-      //System.out.println(">>>>");
+      System.out.println(">>>>");
       return values.size();
       //System.out.println("####" + result.count() + " ==> count: " + ret);
     }
