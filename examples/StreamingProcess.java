@@ -130,7 +130,7 @@ public class StreamingProcess {
       int b1 = id;
       Client statesClient = new Client(uris[0], states);
       try (Client client = new Client(uris[0], events)) {
-        int reprocessing = 10;
+        int reprocessing = 30;
         while(reprocessing-- > 0) {
           int count = 0;
           int scount = 0;
