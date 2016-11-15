@@ -134,7 +134,7 @@ public class StreamingProcess {
       try (Client client = new Client(uris[0], events)) {
         int reprocessing = 10;
         while(reprocessing-- > 0) {
-          System.out.println("##### start process bucket:" + b1);
+          System.out.println("##### reprocessing "+ reprocessing + " start process bucket:" + b1);
           for(int b2 = 0; b2 < 12; b2++) {
             ByteBuffer key1 = ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN);
             key1.put((byte)b1).put((byte)b2);
