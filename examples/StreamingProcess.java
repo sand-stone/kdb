@@ -149,7 +149,7 @@ public class StreamingProcess {
               scount += process(statesClient, rsp);
             }
             //System.out.println("##### bucket " + b1 + ":" + b2 + " count: " + " scount: " + scount);
-            System.out.println("##### reprocessing " + reprocessing + " done process bucket:" + b1 + " count: " + " scount: " + scount);
+            System.out.println("##### reprocessing " + reprocessing + " done process bucket:" + b1 + " count: " + count + " scount: " + scount);
           }
         }
       }
