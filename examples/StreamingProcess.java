@@ -129,11 +129,11 @@ public class StreamingProcess {
       long t1 = System.nanoTime();
       int b1 = id;
       Client statesClient = new Client(uris[0], states);
-      int count = 0;
-      int scount = 0;
       try (Client client = new Client(uris[0], events)) {
         int reprocessing = 10;
         while(reprocessing-- > 0) {
+          int count = 0;
+          int scount = 0;
           System.out.println("##### reprocessing "+ reprocessing + " start process bucket:" + b1);
           for(int b2 = 0; b2 < 12; b2++) {
             ByteBuffer key1 = ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN);
