@@ -19,7 +19,7 @@ public class StreamingProcess {
 
   private static UUID[] deviceIds;
 
-  private int numT = 6;
+  private static int numT = 6;
 
   private static void init() {
     //deviceIds = new UUID[150000000];
