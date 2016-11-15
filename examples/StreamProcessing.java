@@ -20,7 +20,7 @@ public class StreamProcessing {
   private static UUID[] deviceIds;
 
   private static void init() {
-    deviceIds = new UUID[15];
+    deviceIds = new UUID[1500000];
     for(int i = 0; i < deviceIds.length; i++) {
       deviceIds[i] = UUID.randomUUID();
     }
@@ -66,15 +66,17 @@ public class StreamProcessing {
               rnd.nextBytes(value);
               values.add(value);
             }
+            if(m%100 == 0) {
+              batchSize = keys.size();
+              while(client.update(keys, values).status() != Client.Status.OK);
+              keys.clear();
+              values.clear();
+              total += batchSize;
+              long t2 = System.nanoTime();
+              System.out.printf("eventsource %d, bucket %d:%d batchSize %d total %d events takes %e seconds, rate %e \n",
+                                id, i, j, batchSize, total,(t2-t1)/1e9, total/((t2-t1)/1e9));
+            }
           }
-          batchSize = keys.size();
-          while(client.update(keys, values).status() != Client.Status.OK);
-          long t2 = System.nanoTime();
-          keys.clear();
-          values.clear();
-          total += batchSize;
-          System.out.printf("eventsource %d, bucket %d:%d batchSize %d total %d events takes %e seconds, rate %e \n", id, i, j, batchSize, total,
-                            (t2-t1)/1e9, total/((t2-t1)/1e9));
         }
       }
       System.out.printf("eventsource %d inserted %d events\n", id, total);
@@ -243,9 +245,9 @@ public class StreamProcessing {
 
     try {Thread.currentThread().sleep(1000);} catch(Exception ex) {}
 
-    for (int i = 0; i < num; i++) {
+    /*for (int i = 0; i < num; i++) {
       new Thread(new QueryState(i)).start();
-    }
+      }*/
 
     try {Thread.currentThread().sleep(60*60*1000);} catch(Exception ex) {}
     stop = true;
