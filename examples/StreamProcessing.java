@@ -81,15 +81,76 @@ public class StreamProcessing {
     }
   }
 
+  public static class StateUpdateTask extends RecursiveAction {
+    private Client.Result result;
+    private int start;
+    private int end;
+
+    public StateUpdateTask(Client.Result result, int start, int end) {
+      this.result = result;
+      this.start = start;
+      this.end = end;
+    }
+
+    @Override
+    protected void compute() {
+      if(end - start <= 100) {
+        //System.out.printf(" exec start %d end %d\n", start, end);
+        List<byte[]> keys = new ArrayList<byte[]>();
+        List<byte[]> values = new ArrayList<byte[]>();
+        for(int i = start; i < end; i++) {
+          for(int j = 0; j < result.count(); j++) {
+            ByteBuffer key = ByteBuffer.allocate(18).order(ByteOrder.BIG_ENDIAN);
+            key.putShort((short)i);
+            key.put(result.getKey(j), 2, 16);
+            keys.add(key.array());
+            byte[] payload = new byte[1];
+            values.add(payload);
+          }
+        }
+        //System.out.println("<<<<<" + values.size());
+        try (Client client = new Client(uris[0], states)) {
+          client.update(keys, values);
+        }
+        //System.out.println(">>>>");
+      } else {
+        //System.out.printf(" fork start %d end %d\n", start, end);
+        List<StateUpdateTask> subtasks = new ArrayList<StateUpdateTask>();
+        subtasks.addAll(createSubtasks());
+        //System.out.printf(" taks list %d \n", subtasks.size());
+        for(RecursiveAction subtask : subtasks){
+          subtask.fork();
+        }
+      }
+    }
+
+    private List<StateUpdateTask> createSubtasks() {
+      List<StateUpdateTask> subtasks =
+        new ArrayList<StateUpdateTask>();
+
+      int begin = start; int delta = 100;
+      while (begin < end) {
+        if(begin + delta < end) {
+          subtasks.add(new StateUpdateTask(result, begin, begin+delta));
+        }
+        begin += delta;
+      }
+      subtasks.add(new StateUpdateTask(result, begin, end));
+      return subtasks;
+    }
+  }
+
   public static class QueryState implements Runnable {
     private int id;
     private Random rnd;
     private int numquery;
+    ForkJoinPool forkJoinPool;
 
     public QueryState(int id) {
       this.id = id;
       rnd = new Random();
       numquery = 7000;
+      forkJoinPool = new ForkJoinPool(4);
     }
 
     private void deviceid(ByteBuffer buf) {
@@ -97,14 +158,13 @@ public class StreamProcessing {
       buf.putLong(guid.getMostSignificantBits()).putLong(guid.getLeastSignificantBits());
     }
 
-    private int process(Client.Result result) {
-      Client client = new Client(uris[1], states);
+    private void process(Client.Result result) {
+      Client client = new Client(uris[0], states);
       int ret = 0;
       if(result.count() <= 0)
-        return ret;
+        return;
       List<byte[]> keys = new ArrayList<byte[]>();
       List<byte[]> values = new ArrayList<byte[]>();
-
       for(int i = 0; i < numquery; i++) {
         for(int j = 0; j < result.count(); j++) {
           ByteBuffer key = ByteBuffer.allocate(18).order(ByteOrder.BIG_ENDIAN);
@@ -115,11 +175,19 @@ public class StreamProcessing {
           values.add(payload);
         }
       }
+      System.out.println("<<<<<" + values.size());
       client.update(keys, values);
+      System.out.println(">>>>");
       ret = values.size();
       client.close();
       //System.out.println("####" + result.count() + " ==> count: " + ret);
-      return ret;
+    }
+
+    private void process2(Client.Result result) {
+      if(result.count() <= 0)
+        return;
+      StateUpdateTask updates = new StateUpdateTask(result, 0, numquery);
+      forkJoinPool.invoke(updates);
     }
 
     public void run() {
@@ -127,28 +195,28 @@ public class StreamProcessing {
       List<byte[]> values = new ArrayList<byte[]>();
       long t1 = System.nanoTime();
       int b1 = id;
-      System.out.println("##### process bucket:" + b1);
-      for(int b2 = 0; b2 < 12; b2++) {
+      System.out.println("##### start process bucket:" + b1);
+      try (Client client = new Client(uris[0], events)) {
         int count = 0;
-        int ocount = 0;
-        try (Client client = new Client(uris[0], events)) {
+        for(int b2 = 0; b2 < 12; b2++) {
           ByteBuffer key1 = ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN);
           key1.put((byte)b1).put((byte)b2);
           ByteBuffer key2 = ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN);
           key2.put((byte)(b1)).put((byte)(b2+1));
           Client.Result rsp = client.get(key1.array(), key2.array(), 100);
-          ocount += rsp.count();
-          count += process(rsp);
+          count += rsp.count();
+          process2(rsp);
           while(rsp.token().length() > 0) {
             rsp = client.get(Client.QueryType.Between, rsp.token(), 100);
-            ocount += rsp.count();
-            count += process(rsp);
-            System.out.println("ocount: " + ocount + " count: " + count);
+            count += rsp.count();
+            process2(rsp);
           }
+          System.out.println("##### bucket " + b1 + ":" + b2 + " count: " + " xcount: " + count*numquery);
         }
-        System.out.println("##### bucket " + b1 + ":" + b2 + " count: " + ocount + " xcount: " + count);
       }
+      System.out.println("##### done process bucket:" + b1);
     }
+
   }
 
   public static void main(String[] args) {
@@ -164,16 +232,16 @@ public class StreamProcessing {
     System.out.println("create table");
 
     Client.createTable(uris[0], events);
-    Client.createTable(uris[1], states);
+    Client.createTable(uris[0], states);
 
-    int num = 5;
+    int num = 12;
     for (int i = 0; i < num; i++) {
       new Thread(new EventSource(i)).start();
     }
 
     System.out.println("event source threads");
 
-    try {Thread.currentThread().sleep(5000);} catch(Exception ex) {}
+    try {Thread.currentThread().sleep(1000);} catch(Exception ex) {}
 
     for (int i = 0; i < num; i++) {
       new Thread(new QueryState(i)).start();
