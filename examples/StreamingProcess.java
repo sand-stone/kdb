@@ -23,7 +23,8 @@ public class StreamingProcess {
 
   private static void init() {
     //deviceIds = new UUID[150000000];
-    deviceIds = new UUID[100000];
+    //deviceIds = new UUID[100000];
+    deviceIds = new UUID[1000];
     for(int i = 0; i < deviceIds.length; i++) {
       deviceIds[i] = UUID.randomUUID();
     }
@@ -87,6 +88,15 @@ public class StreamingProcess {
     }
   }
 
+  public static int memcmp(final byte[] a, final byte[] b, int len) {
+    for (int i = 0; i < len; i++) {
+      if (a[i] != b[i]) {
+        return (a[i] & 0xFF) - (b[i] & 0xFF);
+      }
+    }
+    return 0;
+  }
+
   public static class QueryState implements Runnable {
     private int id;
     private Random rnd;
@@ -110,19 +120,25 @@ public class StreamingProcess {
         return 0;
       List<byte[]> keys = new ArrayList<byte[]>();
       List<byte[]> values = new ArrayList<byte[]>();
+      byte[] k = null; int joincount = 0;
       for(int j = 0; j < result.count(); j++) {
-        ByteBuffer key = ByteBuffer.allocate(16).order(ByteOrder.BIG_ENDIAN);
-        key.put(result.getKey(j), 2, 16);
-        keys.add(key.array());
-        BitSet bits = new BitSet(numquery);
-        bits.flip(0, bits.size());
-        values.add(bits.toByteArray());
+        if(k == null || memcmp(k, result.getKey(j), 18) != 0) {
+          k = result.getKey(j);
+          ByteBuffer key = ByteBuffer.allocate(18).order(ByteOrder.BIG_ENDIAN);
+          key.put(result.getKey(j), 0, 18);
+          keys.add(key.array());
+          BitSet bits = new BitSet(numquery);
+          bits.flip(0, bits.size());
+          values.add(bits.toByteArray());
+        } else {
+          joincount++;
+        }
       }
-      System.out.println("<<<<<" + values.size());
+      //System.out.println("<<<<<" + values.size());
       client.update(keys, values);
-      System.out.println(">>>>");
+      //System.out.println(">>>>");
+      //System.out.println("####" + result.count() + " state count: " + values.size() + " join:" + joincount);
       return values.size();
-      //System.out.println("####" + result.count() + " ==> count: " + ret);
     }
 
     public void run() {
@@ -182,7 +198,7 @@ public class StreamingProcess {
 
     System.out.println("event source threads");
 
-    try {Thread.currentThread().sleep(30000);} catch(Exception ex) {}
+    try {Thread.currentThread().sleep(5000);} catch(Exception ex) {}
 
     for (int i = 0; i < num; i++) {
       new Thread(new QueryState(i)).start();
